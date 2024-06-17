@@ -13,14 +13,6 @@
 #include <windowsx.h>
 #include <dwmapi.h>
 
-enum {
-    BLINK_SCALE2X = (1 << 0),
-    BLINK_SCALE3X = (1 << 1),
-    BLINK_SCALE4X = (1 << 2),
-    BLINK_HIDECURSOR = (1 << 3),
-    BLINK_FPSINF = (1 << 4)
-};
-
 typedef union { struct { uint8_t b, g, r, a; }; uint32_t w; } blink_Color;
 typedef struct { int x, y, w, h; } blink_Rect;
 typedef struct { blink_Color *pixels; int w, h; } blink_Image;
@@ -30,6 +22,12 @@ typedef struct { blink_Image *image; blink_Glyph glyphs[256]; } blink_Font;
 typedef struct {
     bool should_quit;
     bool hide_cursor;
+    int char_buf[32];
+    uint8_t key_state[256];
+    uint8_t mouse_state[16];
+    struct { int x, y; } mouse_pos;
+    struct { int x, y; } mouse_delta;
+    float mouse_scroll;
     double step_time;
     double prev_time;
     blink_Image *screen;
@@ -51,9 +49,11 @@ typedef struct {
 #define BLINK_WHITE blink_rgb(0xff, 0xff, 0xff)
 #define BLINK_BLACK blink_rgb(0, 0, 0)
 
-blink_Context *blink_create(const char *title, int width, int height, int flags);
+blink_Context *blink_create(const char *title, int width, int height, int scale);
 void blink_destroy(blink_Context *ctx);
 bool blink_update(blink_Context *ctx, double *dt);
+void blink_set_target_fps(blink_Context *ctx, int fps);
+void blink_set_cursor_hidden(blink_Context *ctx, bool hidden);
 void *blink_read_file(const char *filename, int *len);
 
 blink_Image *blink_create_image(int width, int height);
@@ -65,6 +65,17 @@ blink_Font *blink_load_font_mem(void *data, int len);
 blink_Font *blink_load_font_file(const char *filename);
 void blink_destroy_font(blink_Font *font);
 int blink_text_width(blink_Font *font, const char *text);
+
+int blink_get_char(blink_Context *ctx);
+bool blink_key_down(blink_Context *ctx, int key);
+bool blink_key_pressed(blink_Context *ctx, int key);
+bool blink_key_released(blink_Context *ctx, int key);
+void blink_mouse_pos(blink_Context *ctx, int *x, int *y);
+void blink_mouse_delta(blink_Context *ctx, int *x, int *y);
+bool blink_mouse_down(blink_Context *ctx, int button);
+bool blink_mouse_pressed(blink_Context *ctx, int button);
+bool blink_mouse_released(blink_Context *ctx, int button);
+float blink_mouse_scroll(blink_Context *ctx);
 
 void blink_clear(blink_Context *ctx, blink_Color color);
 void blink_set_clip(blink_Context *ctx, blink_Rect rect);

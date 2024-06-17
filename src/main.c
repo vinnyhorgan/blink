@@ -1,7 +1,7 @@
 #include "blink.h"
 
 int main() {
-    blink_Context *ctx = blink_create("Hello blink", 320, 240, BLINK_SCALE2X);
+    blink_Context *ctx = blink_create("Hello blink", 320, 240, 2);
 
     blink_Image *squinkle = blink_load_image_file("assets/squinkle.png");
 
@@ -15,6 +15,10 @@ int main() {
 
         blink_draw_image(ctx, squinkle, 100, 100);
         blink_draw_text(ctx, "Hello blink!", 10, 10, BLINK_BLACK);
+
+        if (blink_mouse_down(ctx, 1)) {
+            blink_draw_text(ctx, "Mouse down!", 10, 30, BLINK_BLACK);
+        }
     }
 
     blink_destroy(ctx);

@@ -11,6 +11,12 @@
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif
 
+enum {
+    BLINK_INPUT_DOWN = (1 << 0),
+    BLINK_INPUT_PRESSED = (1 << 1),
+    BLINK_INPUT_RELEASED = (1 << 2)
+};
+
 #define blink_expect(x) if (!(x)) { blink_panic("assertion failure: %s", #x); }
 
 static void blink_panic(const char *fmt, ...) {
@@ -25,6 +31,11 @@ static void *blink_alloc(int n) {
     void *res = calloc(1, n);
     if (!res) { blink_panic("out of memory"); }
     return res;
+}
+
+static bool blink_check_input_flag(uint8_t *t, uint32_t idx, uint32_t cap, int flag) {
+    if (idx > cap) { return false; }
+    return t[idx] & flag ? true : false;
 }
 
 static blink_Rect blink_intersect_rects(blink_Rect a, blink_Rect b) {
@@ -144,6 +155,55 @@ static LRESULT CALLBACK blink_wndproc(HWND hwnd, UINT message, WPARAM wparam, LP
         }
         goto unhandled;
 
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+        if (lparam & (1 << 30)) { break; }
+        ctx->key_state[(uint8_t) wparam] = BLINK_INPUT_DOWN | BLINK_INPUT_PRESSED;
+        break;
+
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        ctx->key_state[(uint8_t) wparam] &= ~BLINK_INPUT_DOWN;
+        ctx->key_state[(uint8_t) wparam] |= BLINK_INPUT_RELEASED;
+        break;
+
+    case WM_CHAR:
+        if (wparam < 32) { break; }
+        for (int i = 0; i < blink_lengthof(ctx->char_buf); i++) {
+            if (ctx->char_buf[i]) { continue; }
+            ctx->char_buf[i] = wparam;
+            break;
+        }
+        break;
+
+    case WM_LBUTTONDOWN: case WM_LBUTTONUP:
+    case WM_RBUTTONDOWN: case WM_RBUTTONUP:
+    case WM_MBUTTONDOWN: case WM_MBUTTONUP:
+        int button = (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) ? 1 :
+                     (message == WM_RBUTTONDOWN || message == WM_RBUTTONUP) ? 2 : 3;
+        if (message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN) {
+            SetCapture(hwnd);
+            ctx->mouse_state[button] = BLINK_INPUT_DOWN | BLINK_INPUT_PRESSED;
+        } else {
+            ReleaseCapture();
+            ctx->mouse_state[button] &= ~BLINK_INPUT_DOWN;
+            ctx->mouse_state[button] |= BLINK_INPUT_RELEASED;
+        }
+
+    case WM_MOUSEMOVE:
+        wr = blink_get_adjusted_window_rect(ctx);
+        int prevx = ctx->mouse_pos.x;
+        int prevy = ctx->mouse_pos.y;
+        ctx->mouse_pos.x = (GET_X_LPARAM(lparam) - wr.x) * ctx->screen->w / wr.w;
+        ctx->mouse_pos.y = (GET_Y_LPARAM(lparam) - wr.y) * ctx->screen->h / wr.h;
+        ctx->mouse_delta.x += ctx->mouse_pos.x - prevx;
+        ctx->mouse_delta.y += ctx->mouse_pos.y - prevy;
+        break;
+
+    case WM_MOUSEWHEEL:
+        ctx->mouse_scroll = (float) GET_WHEEL_DELTA_WPARAM(wparam) / WHEEL_DELTA;
+        break;
+
     case WM_SIZE:
         if (wparam != SIZE_MINIMIZED) {
             ctx->width = LOWORD(lparam);
@@ -174,18 +234,11 @@ unhandled:
 static void *blink_font_data;
 static int blink_font_size;
 
-blink_Context *blink_create(const char *title, int width, int height, int flags) {
+blink_Context *blink_create(const char *title, int width, int height, int scale) {
     blink_Context *ctx = blink_alloc(sizeof(blink_Context));
 
     ctx->screen = blink_create_image(width, height);
     ctx->clip = blink_rect(0, 0, width, height);
-    ctx->hide_cursor = !!(flags & BLINK_HIDECURSOR);
-
-    if (flags & BLINK_FPSINF) {
-        ctx->step_time = 0;
-    } else {
-        ctx->step_time = 1.0 / 60.0;
-    }
 
     RegisterClass(&(WNDCLASS) {
         .style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW,
@@ -194,9 +247,8 @@ blink_Context *blink_create(const char *title, int width, int height, int flags)
         .lpszClassName = title
     });
 
-    if (flags & BLINK_SCALE2X) { width *= 2; height *= 2; } else
-    if (flags & BLINK_SCALE3X) { width *= 3; height *= 3; } else
-    if (flags & BLINK_SCALE4X) { width *= 4; height *= 4; }
+    width *= scale;
+    height *= scale;
 
     RECT rect = { .right = width, .bottom = height };
     int style = WS_OVERLAPPEDWINDOW;
@@ -245,6 +297,15 @@ bool blink_update(blink_Context *ctx, double *dt) {
     }
     if (dt) { *dt = ctx->prev_time - prev; }
 
+    memset(ctx->char_buf, 0, sizeof(ctx->char_buf));
+    for (int i = 0; i < sizeof(ctx->key_state); i++) {
+        ctx->key_state[i] &= ~(BLINK_INPUT_PRESSED | BLINK_INPUT_RELEASED);
+    }
+    for (int i = 0; i < sizeof(ctx->mouse_state); i++) {
+        ctx->mouse_state[i] &= ~(BLINK_INPUT_PRESSED | BLINK_INPUT_RELEASED);
+    }
+    ctx->mouse_scroll = 0;
+
     MSG msg;
     while (PeekMessage(&msg, ctx->hwnd, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
@@ -252,6 +313,18 @@ bool blink_update(blink_Context *ctx, double *dt) {
     }
 
     return !ctx->should_quit;
+}
+
+void blink_set_target_fps(blink_Context *ctx, int fps) {
+    if (fps < 1) {
+        ctx->step_time = 0;
+    } else {
+        ctx->step_time = 1.0 / (double)fps;
+    }
+}
+
+void blink_set_cursor_hidden(blink_Context *ctx, bool hidden) {
+    ctx->hide_cursor = hidden;
 }
 
 void *blink_read_file(const char *filename, int *len) {
@@ -326,6 +399,54 @@ int blink_text_width(blink_Font *font, const char *text) {
         x += font->glyphs[*p].xadv;
     }
     return x;
+}
+
+int blink_get_char(blink_Context *ctx) {
+    for (int i = 0; i < blink_lengthof(ctx->char_buf); i++) {
+        if (!ctx->char_buf[i]) { continue; }
+        int res = ctx->char_buf[i];
+        ctx->char_buf[i] = 0;
+        return res;
+    }
+    return 0;
+}
+
+bool blink_key_down(blink_Context *ctx, int key) {
+    return blink_check_input_flag(ctx->key_state, key, sizeof(ctx->key_state), BLINK_INPUT_DOWN);
+}
+
+bool blink_key_pressed(blink_Context *ctx, int key) {
+    return blink_check_input_flag(ctx->key_state, key, sizeof(ctx->key_state), BLINK_INPUT_PRESSED);
+}
+
+bool blink_key_released(blink_Context *ctx, int key) {
+    return blink_check_input_flag(ctx->key_state, key, sizeof(ctx->key_state), BLINK_INPUT_RELEASED);
+}
+
+void blink_mouse_pos(blink_Context *ctx, int *x, int *y) {
+    if (x) { *x = ctx->mouse_pos.x; }
+    if (y) { *y = ctx->mouse_pos.y; }
+}
+
+void blink_mouse_delta(blink_Context *ctx, int *x, int *y) {
+    if (x) { *x = ctx->mouse_delta.x; }
+    if (y) { *y = ctx->mouse_delta.y; }
+}
+
+bool blink_mouse_down(blink_Context *ctx, int button) {
+    return blink_check_input_flag(ctx->mouse_state, button, sizeof(ctx->mouse_state), BLINK_INPUT_DOWN);
+}
+
+bool blink_mouse_pressed(blink_Context *ctx, int button) {
+    return blink_check_input_flag(ctx->mouse_state, button, sizeof(ctx->mouse_state), BLINK_INPUT_PRESSED);
+}
+
+bool blink_mouse_released(blink_Context *ctx, int button) {
+    return blink_check_input_flag(ctx->mouse_state, button, sizeof(ctx->mouse_state), BLINK_INPUT_RELEASED);
+}
+
+float blink_mouse_scroll(blink_Context *ctx) {
+    return ctx->mouse_scroll;
 }
 
 void blink_clear(blink_Context *ctx, blink_Color color) {
