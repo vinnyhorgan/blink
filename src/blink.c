@@ -20,6 +20,40 @@ static void *blink_alloc(int n) {
     return res;
 }
 
+static blink_Rect blink_intersect_rects(blink_Rect a, blink_Rect b) {
+    int x1 = blink_max(a.x, b.x);
+    int y1 = blink_max(a.y, b.y);
+    int x2 = blink_min(a.x + a.w, b.x + b.w);
+    int y2 = blink_min(a.y + a.h, b.y + b.h);
+    return (blink_Rect) { x1, y1, x2 - x1, y2 - y1 };
+}
+
+static inline blink_Color blink_blend_pixel(blink_Color dst, blink_Color src) {
+    blink_Color res;
+    res.w = (dst.w & 0xff00ff) + ((((src.w & 0xff00ff) - (dst.w & 0xff00ff)) * src.a) >> 8);
+    res.g = dst.g + (((src.g - dst.g) * src.a) >> 8);
+    res.a = dst.a;
+    return res;
+}
+
+
+static inline blink_Color blink_blend_pixel2(blink_Color dst, blink_Color src, blink_Color clr) {
+    src.a = (src.a * clr.a) >> 8;
+    int ia = 0xff - src.a;
+    dst.r = ((src.r * clr.r * src.a) >> 16) + ((dst.r * ia) >> 8);
+    dst.g = ((src.g * clr.g * src.a) >> 16) + ((dst.g * ia) >> 8);
+    dst.b = ((src.b * clr.b * src.a) >> 16) + ((dst.b * ia) >> 8);
+    return dst;
+}
+
+
+static inline blink_Color blink_blend_pixel3(blink_Color dst, blink_Color src, blink_Color clr, blink_Color add) {
+    src.r = blink_min(255, src.r + add.r);
+    src.g = blink_min(255, src.g + add.g);
+    src.b = blink_min(255, src.b + add.b);
+    return blink_blend_pixel2(dst, src, clr);
+}
+
 static blink_Rect blink_get_adjusted_window_rect(blink_Context *ctx) {
     float src_ar = (float) ctx->screen->h / ctx->screen->w;
     float dst_ar = (float) ctx->height / ctx->width;
@@ -56,6 +90,13 @@ static LRESULT CALLBACK blink_wndproc(HWND hwnd, UINT message, WPARAM wparam, LP
         ValidateRect(hwnd, 0);
         break;
 
+    case WM_SETCURSOR:
+        if (ctx->hide_cursor && LOWORD(lparam) == HTCLIENT) {
+            SetCursor(0);
+            break;
+        }
+        goto unhandled;
+
     case WM_SIZE:
         if (wparam != SIZE_MINIMIZED) {
             ctx->width = LOWORD(lparam);
@@ -76,17 +117,19 @@ static LRESULT CALLBACK blink_wndproc(HWND hwnd, UINT message, WPARAM wparam, LP
         break;
 
     default:
+unhandled:
         return DefWindowProc(hwnd, message, wparam, lparam);
     }
 
     return 0;
 }
 
-blink_Context *blink_create(const char *title, int width, int height) {
+blink_Context *blink_create(const char *title, int width, int height, int flags) {
     blink_Context *ctx = blink_alloc(sizeof(blink_Context));
 
     ctx->screen = blink_create_image(width, height);
     ctx->clip = blink_rect(0, 0, width, height);
+    ctx->hide_cursor = !!(flags & BLINK_HIDECURSOR);
 
     RegisterClass(&(WNDCLASS) {
         .style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW,
@@ -94,6 +137,10 @@ blink_Context *blink_create(const char *title, int width, int height) {
         .hCursor = LoadCursor(0, IDC_ARROW),
         .lpszClassName = title
     });
+
+    if (flags & BLINK_SCALE2X) { width *= 2; height *= 2; } else
+    if (flags & BLINK_SCALE3X) { width *= 3; height *= 3; } else
+    if (flags & BLINK_SCALE4X) { width *= 4; height *= 4; }
 
     RECT rect = { .right = width, .bottom = height };
     int style = WS_OVERLAPPEDWINDOW;
@@ -145,4 +192,50 @@ blink_Image *blink_create_image(int width, int height) {
 
 void blink_destroy_image(blink_Image *img) {
     free(img);
+}
+
+void blink_clear(blink_Context *ctx, blink_Color color) {
+    blink_draw_rect(ctx, blink_rect(0, 0, 0xffffff, 0xffffff), color);
+}
+
+void blink_set_clip(blink_Context *ctx, blink_Rect rect) {
+    blink_Rect screen_rect = blink_rect(0, 0, ctx->screen->w, ctx->screen->h);
+    ctx->clip = blink_intersect_rects(rect, screen_rect);
+}
+
+void blink_draw_point(blink_Context *ctx, int x, int y, blink_Color color) {
+    if (color.a == 0) { return; }
+    blink_Rect r = ctx->clip;
+    if (x < r.x || y < r.y || x >= r.x + r.w || y >= r.y + r.h ) { return; }
+    blink_Color *dst = &ctx->screen->pixels[x + y * ctx->screen->w];
+    *dst = blink_blend_pixel(*dst, color);
+}
+
+void blink_draw_rect(blink_Context *ctx, blink_Rect rect, blink_Color color) {
+    if (color.a == 0) { return; }
+    rect = blink_intersect_rects(rect, ctx->clip);
+    blink_Color *d = &ctx->screen->pixels[rect.x + rect.y * ctx->screen->w];
+    int dr = ctx->screen->w - rect.w;
+    for (int y = 0; y < rect.h; y++) {
+        for (int x = 0; x < rect.w; x++) {
+            *d = blink_blend_pixel(*d, color);
+            d++;
+        }
+        d += dr;
+    }
+}
+
+void blink_draw_line(blink_Context *ctx, int x1, int y1, int x2, int y2, blink_Color color) {
+    int dx = abs(x2-x1);
+    int sx = x1 < x2 ? 1 : -1;
+    int dy = -abs(y2 - y1);
+    int sy = y1 < y2 ? 1 : -1;
+    int err = dx + dy;
+    for (;;) {
+        blink_draw_point(ctx, x1, y1, color);
+        if (x1 == x2 && y1 == y2) { break; }
+        int e2 = err << 1;
+        if (e2 >= dy) { err += dy; x1 += sx; }
+        if (e2 <= dx) { err += dx; y1 += sy; }
+    }
 }

@@ -13,12 +13,20 @@
 #include <windowsx.h>
 #include <dwmapi.h>
 
+enum {
+    BLINK_SCALE2X = (1 << 0),
+    BLINK_SCALE3X = (1 << 1),
+    BLINK_SCALE4X = (1 << 2),
+    BLINK_HIDECURSOR = (1 << 3)
+};
+
 typedef union { struct { uint8_t b, g, r, a; }; uint32_t w; } blink_Color;
 typedef struct { int x, y, w, h; } blink_Rect;
 typedef struct { blink_Color *pixels; int w, h; } blink_Image;
 
 typedef struct {
     bool should_quit;
+    bool hide_cursor;
     blink_Image *screen;
     blink_Rect clip;
     int width, height;
@@ -26,15 +34,25 @@ typedef struct {
     HDC hdc;
 } blink_Context;
 
+#define blink_max(a, b) ((a) > (b) ? (a) : (b))
+#define blink_min(a, b) ((a) < (b) ? (a) : (b))
+#define blink_lengthof(a) (sizeof(a) / sizeof((a)[0]))
+
 #define blink_rect(X, Y, W, H) ((blink_Rect) { (X), (Y), (W), (H) })
 #define blink_rgba(R, G, B, A) ((blink_Color) { .r = (R), .g = (G), .b = (B), .a = (A) })
-#define blink_rgb(R, G, B) kit_rgba(R, G, B, 0xff)
+#define blink_rgb(R, G, B) blink_rgba(R, G, B, 0xff)
 
-blink_Context *blink_create(const char *title, int width, int height);
+blink_Context *blink_create(const char *title, int width, int height, int flags);
 void blink_destroy(blink_Context *ctx);
 bool blink_update(blink_Context *ctx);
 
 blink_Image *blink_create_image(int width, int height);
 void blink_destroy_image(blink_Image *img);
+
+void blink_clear(blink_Context *ctx, blink_Color color);
+void blink_set_clip(blink_Context *ctx, blink_Rect rect);
+void blink_draw_point(blink_Context *ctx, int x, int y, blink_Color color);
+void blink_draw_rect(blink_Context *ctx, blink_Rect rect, blink_Color color);
+void blink_draw_line(blink_Context *ctx, int x1, int y1, int x2, int y2, blink_Color color);
 
 #endif
