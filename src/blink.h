@@ -24,6 +24,8 @@ enum {
 typedef union { struct { uint8_t b, g, r, a; }; uint32_t w; } blink_Color;
 typedef struct { int x, y, w, h; } blink_Rect;
 typedef struct { blink_Color *pixels; int w, h; } blink_Image;
+typedef struct { blink_Rect rect; int xadv; } blink_Glyph;
+typedef struct { blink_Image *image; blink_Glyph glyphs[256]; } blink_Font;
 
 typedef struct {
     bool should_quit;
@@ -32,6 +34,7 @@ typedef struct {
     double prev_time;
     blink_Image *screen;
     blink_Rect clip;
+    blink_Font *font;
     int width, height;
     HWND hwnd;
     HDC hdc;
@@ -58,6 +61,11 @@ blink_Image *blink_load_image_mem(void *data, int len);
 blink_Image *blink_load_image_file(const char *filename);
 void blink_destroy_image(blink_Image *img);
 
+blink_Font *blink_load_font_mem(void *data, int len);
+blink_Font *blink_load_font_file(const char *filename);
+void blink_destroy_font(blink_Font *font);
+int blink_text_width(blink_Font *font, const char *text);
+
 void blink_clear(blink_Context *ctx, blink_Color color);
 void blink_set_clip(blink_Context *ctx, blink_Rect rect);
 void blink_draw_point(blink_Context *ctx, int x, int y, blink_Color color);
@@ -66,5 +74,7 @@ void blink_draw_line(blink_Context *ctx, int x1, int y1, int x2, int y2, blink_C
 void blink_draw_image(blink_Context *ctx, blink_Image *img, int x, int y);
 void blink_draw_image2(blink_Context *ctx, blink_Image *img, int x, int y, blink_Rect src, blink_Color color);
 void blink_draw_image3(blink_Context *ctx, blink_Image *img, blink_Rect dst, blink_Rect src, blink_Color mul_color, blink_Color add_color);
+int blink_draw_text(blink_Context *ctx, const char *text, int x, int y, blink_Color color);
+int blink_draw_text2(blink_Context *ctx, blink_Font *font, const char *text, int x, int y, blink_Color color);
 
 #endif
