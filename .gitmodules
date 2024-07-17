@@ -1,0 +1,3 @@
+[submodule "cri"]
+	path = cri
+	url = https://github.com/vinnyhorgan/cri
