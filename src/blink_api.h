@@ -10,23 +10,29 @@
 #define BLINK_VERSION "0.1.0"
 
 typedef struct {
-    int argc;
-    char **argv;
     bool error;
     char error_message[1024];
-    blink_image *screen;
-    blink_color clear_color;
-    blink_font *font;
-    cri_window *window;
-    int width, height;
-    float scale;
-    bool console;
-    char title[256];
     uint8_t prev_keyboard_state[512];
     uint8_t prev_mouse_state[8];
+    bool console;
+    int argc;
+    char **argv;
+    int width, height;
+    float scale;
+    blink_color clear_color;
+    blink_font *font;
+    char title[256];
     map_int_t keymap;
+    blink_image *screen;
+    cri_window *window;
+    WrenVM *vm;
     WrenHandle *color_class;
     WrenHandle *image_class;
+    WrenHandle *game;
+    WrenHandle *on_config;
+    WrenHandle *on_init;
+    WrenHandle *on_update;
+    WrenHandle *on_draw;
     WrenHandle *on_active;
     WrenHandle *on_resize;
     WrenHandle *on_keyboard;
@@ -34,8 +40,6 @@ typedef struct {
     WrenHandle *on_mouse_button;
     WrenHandle *on_mouse_move;
     WrenHandle *on_mouse_scroll;
-    WrenHandle *game;
-    WrenVM *vm;
 } blink_state;
 
 //--------------------

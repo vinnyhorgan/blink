@@ -187,7 +187,7 @@ static void wren_write(WrenVM *vm, const char *text) {
 static void wren_error(WrenVM *vm, WrenErrorType type, const char *module, int line, const char *message) {
     blink_state *state = wrenGetUserData(vm);
 
-    int max_width = state->width / 8;
+    int max_width = (state->width - 20) / 8;
 
     char formatted_message[1024];
     char wrapped_message[1024];
@@ -380,6 +380,7 @@ static void on_keyboard(cri_window *window, cri_key key, cri_mod_key mod, bool i
         case KB_KEY_MENU: wrenSetSlotString(state->vm, 1, "menu"); break;
         }
 
+        wrenSetSlotBool(state->vm, 2, is_pressed);
         wrenCall(state->vm, state->on_keyboard);
     }
 }
@@ -458,210 +459,306 @@ static int default_font_size;
 
 int main(int argc, char **argv) {
     blink_state state;
-    memset(&state, 0, sizeof(state));
+    memset(&state, 0, sizeof(blink_state));
 
     state.argc = argc;
     state.argv = argv;
-
-    state.error = false;
-    state.error_message[0] = '\0';
-
-    state.clear_color = blink_rgb(255, 255, 255);
-    state.font = blink_load_font_mem(default_font_data, default_font_size);
-    state.scale = 2.0f;
     state.width = 320;
     state.height = 240;
+    state.scale = 2.0f;
+    state.clear_color = blink_rgb(0, 0, 0);
+    state.font = blink_load_font_mem(default_font_data, default_font_size);
+    strcpy(state.title, "Blink");
 
     map_init(&state.keymap);
-
+    map_set(&state.keymap, "unknown", KB_KEY_UNKNOWN);
     map_set(&state.keymap, "space", KB_KEY_SPACE);
-
-    strcpy(state.title, "Blink");
+    map_set(&state.keymap, "apostrophe", KB_KEY_APOSTROPHE);
+    map_set(&state.keymap, "comma", KB_KEY_COMMA);
+    map_set(&state.keymap, "minus", KB_KEY_MINUS);
+    map_set(&state.keymap, "period", KB_KEY_PERIOD);
+    map_set(&state.keymap, "slash", KB_KEY_SLASH);
+    map_set(&state.keymap, "0", KB_KEY_0);
+    map_set(&state.keymap, "1", KB_KEY_1);
+    map_set(&state.keymap, "2", KB_KEY_2);
+    map_set(&state.keymap, "3", KB_KEY_3);
+    map_set(&state.keymap, "4", KB_KEY_4);
+    map_set(&state.keymap, "5", KB_KEY_5);
+    map_set(&state.keymap, "6", KB_KEY_6);
+    map_set(&state.keymap, "7", KB_KEY_7);
+    map_set(&state.keymap, "8", KB_KEY_8);
+    map_set(&state.keymap, "9", KB_KEY_9);
+    map_set(&state.keymap, "semicolon", KB_KEY_SEMICOLON);
+    map_set(&state.keymap, "equal", KB_KEY_EQUAL);
+    map_set(&state.keymap, "a", KB_KEY_A);
+    map_set(&state.keymap, "b", KB_KEY_B);
+    map_set(&state.keymap, "c", KB_KEY_C);
+    map_set(&state.keymap, "d", KB_KEY_D);
+    map_set(&state.keymap, "e", KB_KEY_E);
+    map_set(&state.keymap, "f", KB_KEY_F);
+    map_set(&state.keymap, "g", KB_KEY_G);
+    map_set(&state.keymap, "h", KB_KEY_H);
+    map_set(&state.keymap, "i", KB_KEY_I);
+    map_set(&state.keymap, "j", KB_KEY_J);
+    map_set(&state.keymap, "k", KB_KEY_K);
+    map_set(&state.keymap, "l", KB_KEY_L);
+    map_set(&state.keymap, "m", KB_KEY_M);
+    map_set(&state.keymap, "n", KB_KEY_N);
+    map_set(&state.keymap, "o", KB_KEY_O);
+    map_set(&state.keymap, "p", KB_KEY_P);
+    map_set(&state.keymap, "q", KB_KEY_Q);
+    map_set(&state.keymap, "r", KB_KEY_R);
+    map_set(&state.keymap, "s", KB_KEY_S);
+    map_set(&state.keymap, "t", KB_KEY_T);
+    map_set(&state.keymap, "u", KB_KEY_U);
+    map_set(&state.keymap, "v", KB_KEY_V);
+    map_set(&state.keymap, "w", KB_KEY_W);
+    map_set(&state.keymap, "x", KB_KEY_X);
+    map_set(&state.keymap, "y", KB_KEY_Y);
+    map_set(&state.keymap, "z", KB_KEY_Z);
+    map_set(&state.keymap, "left_bracket", KB_KEY_LEFT_BRACKET);
+    map_set(&state.keymap, "backslash", KB_KEY_BACKSLASH);
+    map_set(&state.keymap, "right_bracket", KB_KEY_RIGHT_BRACKET);
+    map_set(&state.keymap, "grave_accent", KB_KEY_GRAVE_ACCENT);
+    map_set(&state.keymap, "world_1", KB_KEY_WORLD_1);
+    map_set(&state.keymap, "world_2", KB_KEY_WORLD_2);
+    map_set(&state.keymap, "escape", KB_KEY_ESCAPE);
+    map_set(&state.keymap, "enter", KB_KEY_ENTER);
+    map_set(&state.keymap, "tab", KB_KEY_TAB);
+    map_set(&state.keymap, "backspace", KB_KEY_BACKSPACE);
+    map_set(&state.keymap, "insert", KB_KEY_INSERT);
+    map_set(&state.keymap, "delete", KB_KEY_DELETE);
+    map_set(&state.keymap, "right", KB_KEY_RIGHT);
+    map_set(&state.keymap, "left", KB_KEY_LEFT);
+    map_set(&state.keymap, "down", KB_KEY_DOWN);
+    map_set(&state.keymap, "up", KB_KEY_UP);
+    map_set(&state.keymap, "page_up", KB_KEY_PAGE_UP);
+    map_set(&state.keymap, "page_down", KB_KEY_PAGE_DOWN);
+    map_set(&state.keymap, "home", KB_KEY_HOME);
+    map_set(&state.keymap, "end", KB_KEY_END);
+    map_set(&state.keymap, "caps_lock", KB_KEY_CAPS_LOCK);
+    map_set(&state.keymap, "scroll_lock", KB_KEY_SCROLL_LOCK);
+    map_set(&state.keymap, "num_lock", KB_KEY_NUM_LOCK);
+    map_set(&state.keymap, "print_screen", KB_KEY_PRINT_SCREEN);
+    map_set(&state.keymap, "pause", KB_KEY_PAUSE);
+    map_set(&state.keymap, "f1", KB_KEY_F1);
+    map_set(&state.keymap, "f2", KB_KEY_F2);
+    map_set(&state.keymap, "f3", KB_KEY_F3);
+    map_set(&state.keymap, "f4", KB_KEY_F4);
+    map_set(&state.keymap, "f5", KB_KEY_F5);
+    map_set(&state.keymap, "f6", KB_KEY_F6);
+    map_set(&state.keymap, "f7", KB_KEY_F7);
+    map_set(&state.keymap, "f8", KB_KEY_F8);
+    map_set(&state.keymap, "f9", KB_KEY_F9);
+    map_set(&state.keymap, "f10", KB_KEY_F10);
+    map_set(&state.keymap, "f11", KB_KEY_F11);
+    map_set(&state.keymap, "f12", KB_KEY_F12);
+    map_set(&state.keymap, "f13", KB_KEY_F13);
+    map_set(&state.keymap, "f14", KB_KEY_F14);
+    map_set(&state.keymap, "f15", KB_KEY_F15);
+    map_set(&state.keymap, "f16", KB_KEY_F16);
+    map_set(&state.keymap, "f17", KB_KEY_F17);
+    map_set(&state.keymap, "f18", KB_KEY_F18);
+    map_set(&state.keymap, "f19", KB_KEY_F19);
+    map_set(&state.keymap, "f20", KB_KEY_F20);
+    map_set(&state.keymap, "f21", KB_KEY_F21);
+    map_set(&state.keymap, "f22", KB_KEY_F22);
+    map_set(&state.keymap, "f23", KB_KEY_F23);
+    map_set(&state.keymap, "f24", KB_KEY_F24);
+    map_set(&state.keymap, "f25", KB_KEY_F25);
+    map_set(&state.keymap, "kp0", KB_KEY_KP_0);
+    map_set(&state.keymap, "kp1", KB_KEY_KP_1);
+    map_set(&state.keymap, "kp2", KB_KEY_KP_2);
+    map_set(&state.keymap, "kp3", KB_KEY_KP_3);
+    map_set(&state.keymap, "kp4", KB_KEY_KP_4);
+    map_set(&state.keymap, "kp5", KB_KEY_KP_5);
+    map_set(&state.keymap, "kp6", KB_KEY_KP_6);
+    map_set(&state.keymap, "kp7", KB_KEY_KP_7);
+    map_set(&state.keymap, "kp8", KB_KEY_KP_8);
+    map_set(&state.keymap, "kp9", KB_KEY_KP_9);
+    map_set(&state.keymap, "decimal", KB_KEY_KP_DECIMAL);
+    map_set(&state.keymap, "divide", KB_KEY_KP_DIVIDE);
+    map_set(&state.keymap, "multiply", KB_KEY_KP_MULTIPLY);
+    map_set(&state.keymap, "subtract", KB_KEY_KP_SUBTRACT);
+    map_set(&state.keymap, "add", KB_KEY_KP_ADD);
+    map_set(&state.keymap, "enter", KB_KEY_KP_ENTER);
+    map_set(&state.keymap, "equal", KB_KEY_KP_EQUAL);
+    map_set(&state.keymap, "left_shift", KB_KEY_LEFT_SHIFT);
+    map_set(&state.keymap, "left_control", KB_KEY_LEFT_CONTROL);
+    map_set(&state.keymap, "left_alt", KB_KEY_LEFT_ALT);
+    map_set(&state.keymap, "left_super", KB_KEY_LEFT_SUPER);
+    map_set(&state.keymap, "right_shift", KB_KEY_RIGHT_SHIFT);
+    map_set(&state.keymap, "right_control", KB_KEY_RIGHT_CONTROL);
+    map_set(&state.keymap, "right_alt", KB_KEY_RIGHT_ALT);
+    map_set(&state.keymap, "right_super", KB_KEY_RIGHT_SUPER);
+    map_set(&state.keymap, "menu", KB_KEY_MENU);
 
     WrenConfiguration config;
     wrenInitConfiguration(&config);
-
-    config.writeFn = wren_write;
-    config.errorFn = wren_error;
     config.loadModuleFn = wren_load_module;
     config.bindForeignMethodFn = wren_bind_foreign_method;
     config.bindForeignClassFn = wren_bind_foreign_class;
+    config.writeFn = wren_write;
+    config.errorFn = wren_error;
 
     WrenVM *vm = wrenNewVM(&config);
+    wrenSetUserData(vm, &state);
 
     state.vm = vm;
 
     wrenInterpret(vm, "blink", api_source);
-
     wrenEnsureSlots(vm, 1);
-
     wrenGetVariable(vm, "blink", "Color", 0);
     state.color_class = wrenGetSlotHandle(vm, 0);
-
     wrenGetVariable(vm, "blink", "Image", 0);
     state.image_class = wrenGetSlotHandle(vm, 0);
 
-    wrenSetUserData(vm, &state);
-
-    WrenHandle *conf, *init, *update, *draw;
-
-    chdir(argv[1]);
-
     int flags = 0;
 
+    chdir(argv[1]);
     char *source = cri_read_file("main.wren", NULL);
     if (!source) {
         state.error = true;
         strcpy(state.error_message, "Failed to read source file");
-    } else {
-        WrenInterpretResult res = wrenInterpret(vm, argv[1], source);
-        if (res == WREN_RESULT_SUCCESS) {
-            wrenEnsureSlots(vm, 1);
-            wrenGetVariable(vm, argv[1], "Game", 0);
-            state.game = wrenGetSlotHandle(vm, 0);
-            conf = wrenMakeCallHandle(vm, "config(_)");
-            init = wrenMakeCallHandle(vm, "init()");
-            update = wrenMakeCallHandle(vm, "update(_)");
-            draw = wrenMakeCallHandle(vm, "draw()");
-            state.on_active = wrenMakeCallHandle(vm, "active(_)");
-            state.on_resize = wrenMakeCallHandle(vm, "resize(_,_)");
-            state.on_keyboard = wrenMakeCallHandle(vm, "keyboard(_,_)");
-            state.on_char_input = wrenMakeCallHandle(vm, "input(_)");
-            state.on_mouse_button = wrenMakeCallHandle(vm, "mouseButton(_,_)");
-            state.on_mouse_move = wrenMakeCallHandle(vm, "mouseMove(_,_)");
-            state.on_mouse_scroll = wrenMakeCallHandle(vm, "mouseScroll(_,_)");
-
-            wrenEnsureSlots(vm, 4);
-
-            wrenSetSlotNewMap(vm, 1);
-
-            wrenSetSlotString(vm, 2, "console");
-            wrenSetSlotBool(vm, 3, false);
-            wrenSetMapValue(vm, 1, 2, 3);
-
-            wrenSetSlotString(vm, 2, "resizable");
-            wrenSetSlotBool(vm, 3, true);
-            wrenSetMapValue(vm, 1, 2, 3);
-
-            wrenSetSlotString(vm, 2, "hideCursor");
-            wrenSetSlotBool(vm, 3, false);
-            wrenSetMapValue(vm, 1, 2, 3);
-
-            wrenSetSlotString(vm, 2, "title");
-            wrenSetSlotString(vm, 3, "Blink");
-            wrenSetMapValue(vm, 1, 2, 3);
-
-            wrenSetSlotString(vm, 2, "console");
-            wrenSetSlotBool(vm, 3, false);
-            wrenSetMapValue(vm, 1, 2, 3);
-
-            wrenSetSlotString(vm, 2, "targetFps");
-            wrenSetSlotDouble(vm, 3, 60);
-            wrenSetMapValue(vm, 1, 2, 3);
-
-            wrenSetSlotString(vm, 2, "width");
-            wrenSetSlotDouble(vm, 3, 320);
-            wrenSetMapValue(vm, 1, 2, 3);
-
-            wrenSetSlotString(vm, 2, "height");
-            wrenSetSlotDouble(vm, 3, 240);
-            wrenSetMapValue(vm, 1, 2, 3);
-
-            wrenSetSlotString(vm, 2, "scale");
-            wrenSetSlotDouble(vm, 3, 2);
-            wrenSetMapValue(vm, 1, 2, 3);
-
-            wrenSetSlotHandle(vm, 0, state.game);
-            WrenInterpretResult res = wrenCall(vm, conf);
-
-            if (res == WREN_RESULT_SUCCESS) {
-                wrenEnsureSlots(vm, 4);
-
-                wrenSetSlotString(vm, 2, "console");
-                wrenGetMapValue(vm, 1, 2, 3);
-                if (wrenGetSlotType(vm, 3) == WREN_TYPE_BOOL) {
-                    state.console = wrenGetSlotBool(vm, 3);
-                    if (state.console) {
-                        if (AllocConsole()) {
-                            freopen("CONOUT$", "w", stdout);
-                            freopen("CONOUT$", "w", stderr);
-                            freopen("CONIN$", "r", stdin);
-                        }
-                    }
-                } else {
-                    state.console = false;
-                }
-
-                wrenSetSlotString(vm, 2, "resizable");
-                wrenGetMapValue(vm, 1, 2, 3);
-                if (wrenGetSlotType(vm, 3) == WREN_TYPE_BOOL) {
-                    bool resizable = wrenGetSlotBool(vm, 3);
-                    if (resizable) {
-                        flags |= FLAG_RESIZABLE;
-                    }
-                }
-
-                wrenSetSlotString(vm, 2, "hideCursor");
-                wrenGetMapValue(vm, 1, 2, 3);
-                if (wrenGetSlotType(vm, 3) == WREN_TYPE_BOOL) {
-                    bool hide_cursor = wrenGetSlotBool(vm, 3);
-                    if (hide_cursor) {
-                        flags |= FLAG_HIDECURSOR;
-                    }
-                }
-
-                wrenSetSlotString(vm, 2, "title");
-                wrenGetMapValue(vm, 1, 2, 3);
-                if (wrenGetSlotType(vm, 3) == WREN_TYPE_STRING) {
-                    const char *title = wrenGetSlotString(vm, 3);
-                    strcpy(state.title, title);
-                } else {
-                    strcpy(state.title, "Blink");
-                }
-
-                wrenSetSlotString(vm, 2, "targetFps");
-                wrenGetMapValue(vm, 1, 2, 3);
-                if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM) {
-                    cri_set_target_fps((int)wrenGetSlotDouble(vm, 3));
-                }
-
-                wrenSetSlotString(vm, 2, "width");
-                wrenGetMapValue(vm, 1, 2, 3);
-                if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM) {
-                    state.width = (int)wrenGetSlotDouble(vm, 3);
-                } else {
-                    state.width = 320;
-                }
-
-                wrenSetSlotString(vm, 2, "height");
-                wrenGetMapValue(vm, 1, 2, 3);
-                if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM) {
-                    state.height = (int)wrenGetSlotDouble(vm, 3);
-                } else {
-                    state.height = 240;
-                }
-
-                wrenSetSlotString(vm, 2, "scale");
-                wrenGetMapValue(vm, 1, 2, 3);
-                if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM) {
-                    state.scale = (int)wrenGetSlotDouble(vm, 3);
-                } else {
-                    state.scale = 2;
-                }
-
-                wrenSetSlotHandle(vm, 0, state.game);
-                wrenCall(vm, init);
-            }
-        }
-
-        free(source);
+        goto error;
     }
 
-    state.window = cri_open(state.title, state.width * state.scale, state.height * state.scale, flags);
-    if (!state.window)
-        return 1;
+    WrenInterpretResult res = wrenInterpret(vm, argv[1], source);
+    free(source);
+    if (res != WREN_RESULT_SUCCESS)
+        goto error;
 
+    if (!wrenHasVariable(vm, argv[1], "Game")) {
+        state.error = true;
+        strcpy(state.error_message, "Failed to find Game class");
+        goto error;
+    }
+
+    wrenEnsureSlots(vm, 1);
+    wrenGetVariable(vm, argv[1], "Game", 0);
+    if (wrenGetSlotType(vm, 0) != WREN_TYPE_UNKNOWN) {
+        state.error = true;
+        strcpy(state.error_message, "Game class is of an invalid type");
+        goto error;
+    }
+
+    state.game = wrenGetSlotHandle(vm, 0);
+    state.on_config = wrenMakeCallHandle(vm, "config(_)");
+    state.on_init = wrenMakeCallHandle(vm, "init()");
+    state.on_update = wrenMakeCallHandle(vm, "update(_)");
+    state.on_draw = wrenMakeCallHandle(vm, "draw()");
+    state.on_active = wrenMakeCallHandle(vm, "active(_)");
+    state.on_resize = wrenMakeCallHandle(vm, "resize(_,_)");
+    state.on_keyboard = wrenMakeCallHandle(vm, "keyboard(_,_)");
+    state.on_char_input = wrenMakeCallHandle(vm, "input(_)");
+    state.on_mouse_button = wrenMakeCallHandle(vm, "mouseButton(_,_)");
+    state.on_mouse_move = wrenMakeCallHandle(vm, "mouseMove(_,_)");
+    state.on_mouse_scroll = wrenMakeCallHandle(vm, "mouseScroll(_,_)");
+
+    wrenEnsureSlots(vm, 4);
+    wrenSetSlotNewMap(vm, 1);
+
+    wrenSetSlotString(vm, 2, "console");
+    wrenSetSlotBool(vm, 3, false);
+    wrenSetMapValue(vm, 1, 2, 3);
+
+    wrenSetSlotString(vm, 2, "resizable");
+    wrenSetSlotBool(vm, 3, true);
+    wrenSetMapValue(vm, 1, 2, 3);
+
+    wrenSetSlotString(vm, 2, "hideCursor");
+    wrenSetSlotBool(vm, 3, false);
+    wrenSetMapValue(vm, 1, 2, 3);
+
+    wrenSetSlotString(vm, 2, "title");
+    wrenSetSlotString(vm, 3, "Blink");
+    wrenSetMapValue(vm, 1, 2, 3);
+
+    wrenSetSlotString(vm, 2, "targetFps");
+    wrenSetSlotDouble(vm, 3, 60);
+    wrenSetMapValue(vm, 1, 2, 3);
+
+    wrenSetSlotString(vm, 2, "width");
+    wrenSetSlotDouble(vm, 3, 320);
+    wrenSetMapValue(vm, 1, 2, 3);
+
+    wrenSetSlotString(vm, 2, "height");
+    wrenSetSlotDouble(vm, 3, 240);
+    wrenSetMapValue(vm, 1, 2, 3);
+
+    wrenSetSlotString(vm, 2, "scale");
+    wrenSetSlotDouble(vm, 3, 2);
+    wrenSetMapValue(vm, 1, 2, 3);
+
+    wrenSetSlotHandle(vm, 0, state.game);
+    res = wrenCall(vm, state.on_config);
+    if (res != WREN_RESULT_SUCCESS)
+        goto error;
+
+    wrenEnsureSlots(vm, 4);
+
+#ifdef _WIN32
+    wrenSetSlotString(vm, 2, "console");
+    wrenGetMapValue(vm, 1, 2, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_BOOL) {
+        state.console = wrenGetSlotBool(vm, 3);
+        if (state.console) {
+            if (AllocConsole()) {
+                freopen("CONOUT$", "w", stdout);
+                freopen("CONOUT$", "w", stderr);
+                freopen("CONIN$", "r", stdin);
+            }
+        }
+    }
+#endif
+
+    wrenSetSlotString(vm, 2, "resizable");
+    wrenGetMapValue(vm, 1, 2, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_BOOL) {
+        if (wrenGetSlotBool(vm, 3))
+            flags |= FLAG_RESIZABLE;
+    }
+
+    wrenSetSlotString(vm, 2, "hideCursor");
+    wrenGetMapValue(vm, 1, 2, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_BOOL) {
+        if (wrenGetSlotBool(vm, 3))
+            flags |= FLAG_HIDECURSOR;
+    }
+
+    wrenSetSlotString(vm, 2, "title");
+    wrenGetMapValue(vm, 1, 2, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_STRING)
+        strcpy(state.title, wrenGetSlotString(vm, 3));
+
+    wrenSetSlotString(vm, 2, "targetFps");
+    wrenGetMapValue(vm, 1, 2, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
+        cri_set_target_fps((int)wrenGetSlotDouble(vm, 3));
+
+    wrenSetSlotString(vm, 2, "width");
+    wrenGetMapValue(vm, 1, 2, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
+        state.width = (int)wrenGetSlotDouble(vm, 3);
+
+    wrenSetSlotString(vm, 2, "height");
+    wrenGetMapValue(vm, 1, 2, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
+        state.height = (int)wrenGetSlotDouble(vm, 3);
+
+    wrenSetSlotString(vm, 2, "scale");
+    wrenGetMapValue(vm, 1, 2, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
+        state.scale = (int)wrenGetSlotDouble(vm, 3);
+
+    wrenSetSlotHandle(vm, 0, state.game);
+    wrenCall(vm, state.on_init);
+
+error:
     state.screen = blink_create_image(state.width, state.height);
+    state.window = cri_open(state.title, state.width * state.scale, state.height * state.scale, flags);
+
+    cri_set_user_data(state.window, &state);
 
     cri_set_active_cb(state.window, on_active);
     cri_set_resize_cb(state.window, on_resize);
@@ -671,26 +768,24 @@ int main(int argc, char **argv) {
     cri_set_mouse_move_cb(state.window, on_mouse_move);
     cri_set_mouse_scroll_cb(state.window, on_mouse_scroll);
 
-    cri_set_user_data(state.window, &state);
-
     cri_timer *timer = cri_timer_create();
     double dt = 0;
 
     do {
         if (state.error) {
-            blink_clear(state.screen, blink_rgb(255, 130, 170));
+            blink_clear(state.screen, blink_rgb(255, 0, 77));
             blink_draw_text(state.screen, state.font, state.error_message, 10, 10, blink_rgb(255, 241, 232));
         } else {
             cri_timer_now(timer);
 
             wrenSetSlotHandle(vm, 0, state.game);
             wrenSetSlotDouble(vm, 1, dt);
-            WrenInterpretResult res = wrenCall(vm, update);
+            res = wrenCall(vm, state.on_update);
             if (res == WREN_RESULT_SUCCESS) {
                 blink_clear(state.screen, state.clear_color);
 
                 wrenSetSlotHandle(vm, 0, state.game);
-                wrenCall(vm, draw);
+                wrenCall(vm, state.on_draw);
             }
         }
 
@@ -703,10 +798,42 @@ int main(int argc, char **argv) {
         dt = cri_timer_dt(timer);
     } while (cri_wait_sync(state.window));
 
-    map_deinit(&state.keymap);
-
+#ifdef _WIN32
     if (state.console)
         FreeConsole();
+#endif
+
+    map_deinit(&state.keymap);
+    blink_destroy_font(state.font);
+    blink_destroy_image(state.screen);
+
+    wrenReleaseHandle(vm, state.color_class);
+    wrenReleaseHandle(vm, state.image_class);
+
+    if (state.game)
+        wrenReleaseHandle(vm, state.game);
+    if (state.on_config)
+        wrenReleaseHandle(vm, state.on_config);
+    if (state.on_init)
+        wrenReleaseHandle(vm, state.on_init);
+    if (state.on_update)
+        wrenReleaseHandle(vm, state.on_update);
+    if (state.on_draw)
+        wrenReleaseHandle(vm, state.on_draw);
+    if (state.on_active)
+        wrenReleaseHandle(vm, state.on_active);
+    if (state.on_resize)
+        wrenReleaseHandle(vm, state.on_resize);
+    if (state.on_keyboard)
+        wrenReleaseHandle(vm, state.on_keyboard);
+    if (state.on_char_input)
+        wrenReleaseHandle(vm, state.on_char_input);
+    if (state.on_mouse_button)
+        wrenReleaseHandle(vm, state.on_mouse_button);
+    if (state.on_mouse_move)
+        wrenReleaseHandle(vm, state.on_mouse_move);
+    if (state.on_mouse_scroll)
+        wrenReleaseHandle(vm, state.on_mouse_scroll);
 
     wrenFreeVM(vm);
 
