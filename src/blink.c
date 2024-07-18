@@ -195,14 +195,20 @@ static void wren_error(WrenVM *vm, WrenErrorType type, const char *module, int l
     switch (type) {
     case WREN_ERROR_COMPILE:
         state->error = true;
-        blink_set_clip(state->screen, blink_new_rect(0, 0, -1, -1));
+
+        if (state->screen)
+            blink_set_clip(state->screen, blink_new_rect(0, 0, -1, -1));
+
         snprintf(formatted_message, sizeof(formatted_message), "[%s line %d] %s", module, line, message);
         word_wrap(formatted_message, max_width, wrapped_message);
         snprintf(state->error_message, sizeof(state->error_message), "COMPILE ERROR :(\n\n%s", wrapped_message);
         break;
     case WREN_ERROR_RUNTIME:
         state->error = true;
-        blink_set_clip(state->screen, blink_new_rect(0, 0, -1, -1));
+
+        if (state->screen)
+            blink_set_clip(state->screen, blink_new_rect(0, 0, -1, -1));
+
         snprintf(formatted_message, sizeof(formatted_message), "%s", message);
         word_wrap(formatted_message, max_width, wrapped_message);
         snprintf(state->error_message, sizeof(state->error_message), "RUNTIME ERROR :(\n\n%s\n\nSTACK TRACE:\n\n", wrapped_message);
@@ -628,14 +634,14 @@ int main(int argc, char **argv) {
     if (res != WREN_RESULT_SUCCESS)
         goto error;
 
-    if (!wrenHasVariable(vm, argv[1], "Game")) {
+    if (!wrenHasVariable(vm, argv[1], "main")) {
         state.error = true;
-        strcpy(state.error_message, "Failed to find Game class");
+        strcpy(state.error_message, "Failed to find Game class instance");
         goto error;
     }
 
     wrenEnsureSlots(vm, 1);
-    wrenGetVariable(vm, argv[1], "Game", 0);
+    wrenGetVariable(vm, argv[1], "main", 0);
     if (wrenGetSlotType(vm, 0) != WREN_TYPE_UNKNOWN) {
         state.error = true;
         strcpy(state.error_message, "Game class is of an invalid type");

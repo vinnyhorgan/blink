@@ -174,3 +174,21 @@ class File {
     foreign static read(path)
     foreign static write(path, data)
 }
+
+//--------------------
+// Base Game
+//--------------------
+
+class BaseGame {
+    config(t) {}
+    init() {}
+    update(dt) {}
+    draw() {}
+    active(active) {}
+    resize(width, height) {}
+    keyboard(key, pressed) {}
+    input(char) {}
+    mouseButton(button, pressed) {}
+    mouseMove(x, y) {}
+    mouseScroll(dx, dy) {}
+}
