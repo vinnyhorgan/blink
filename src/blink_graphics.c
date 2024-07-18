@@ -1,7 +1,7 @@
 #include "blink_graphics.h"
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define STBI_NO_STDIO

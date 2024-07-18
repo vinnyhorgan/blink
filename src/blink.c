@@ -1,22 +1,28 @@
 #include "cri.h"
 #include "lib/wren.h"
 
-#include "blink_graphics.h"
-#include "blink_api.h"
-
-#include "api.wren.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <direct.h>
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
+#include "blink_api.h"
+#include "blink_graphics.h"
+#include "api.wren.h"
+
 #define blink_min(a, b) ((a) < (b) ? (a) : (b))
 
-// This file is a bit of a mess at the moment...
+#define bind_method(s, m)      \
+    if (!strcmp(signature, s)) \
+        return m;
+
+//--------------------
+// Wren Configuration
+//--------------------
 
 static void word_wrap(const char *input, int line_width, char *output) {
     int input_len = strlen(input);
@@ -27,13 +33,11 @@ static void word_wrap(const char *input, int line_width, char *output) {
         int line_end = line_start + line_width;
 
         if (line_end >= input_len) {
-            // If the remaining part of the string is shorter than the line width
             strcpy(output + output_index, input + line_start);
             output_index += strlen(input + line_start);
             break;
         }
 
-        // Find the last space within the current line width
         int last_space = -1;
         for (int i = line_start; i < line_end; i++) {
             if (isspace(input[i])) {
@@ -42,34 +46,145 @@ static void word_wrap(const char *input, int line_width, char *output) {
         }
 
         if (last_space == -1) {
-            // No spaces found, force a line break
             strncpy(output + output_index, input + line_start, line_width);
             output_index += line_width;
             output[output_index++] = '\n';
             line_start += line_width;
         } else {
-            // Break at the last space
             strncpy(output + output_index, input + line_start, last_space - line_start);
             output_index += last_space - line_start;
             output[output_index++] = '\n';
             line_start = last_space + 1;
         }
 
-        // Skip any leading spaces at the start of the new line
         while (isspace(input[line_start])) {
             line_start++;
         }
     }
 
-    output[output_index] = '\0'; // Null-terminate the output string
+    output[output_index] = '\0';
+}
+
+static void on_complete(WrenVM *vm, const char *name, WrenLoadModuleResult result) {
+    if (result.source)
+        free((void*)result.source);
+}
+
+static WrenLoadModuleResult wren_load_module(WrenVM *vm, const char *name) {
+    WrenLoadModuleResult result = { 0 };
+
+    if (!strcmp(name, "meta") || !strcmp(name, "random"))
+        return result;
+
+    if (!strcmp(name, "blink")) {
+        result.source = api_source;
+        return result;
+    }
+
+    char full_path[256];
+    snprintf(full_path, sizeof(full_path), "%s.wren", name);
+
+    result.source = cri_read_file(full_path, NULL);
+    result.onComplete = on_complete;
+
+    return result;
+}
+
+static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *module, const char *class_name, bool is_static, const char *signature) {
+    if (!strcmp(class_name, "Graphics")) {
+        bind_method("clip(_,_,_,_)", api_graphics_clip);
+        bind_method("clear(_)", api_graphics_clear);
+        bind_method("get(_,_)", api_graphics_get);
+        bind_method("set(_,_,_)", api_graphics_set);
+        bind_method("line(_,_,_,_,_)", api_graphics_line);
+        bind_method("fill(_,_,_,_,_)", api_graphics_fill);
+        bind_method("rectangle(_,_,_,_,_)", api_graphics_rectangle);
+        bind_method("fillRectangle(_,_,_,_,_)", api_graphics_fill_rectangle);
+        bind_method("circle(_,_,_,_)", api_graphics_circle);
+        bind_method("fillCircle(_,_,_,_)", api_graphics_fill_circle);
+        bind_method("blit(_,_,_,_,_,_,_)", api_graphics_blit);
+        bind_method("blitAlpha(_,_,_,_,_,_,_,_)", api_graphics_blit_alpha);
+        bind_method("blitTint(_,_,_,_,_,_,_,_)", api_graphics_blit_tint);
+        bind_method("print(_,_,_,_)", api_graphics_print);
+        bind_method("screenshot()", api_graphics_screenshot);
+        bind_method("measure(_)", api_graphics_measure);
+        bind_method("clearColor=(_)", api_graphics_set_clear_color);
+    } else if (!strcmp(class_name, "Color")) {
+        bind_method("init new(_,_,_,_)", api_color_new_rgba);
+        bind_method("init new(_,_,_)", api_color_new_rgb);
+        bind_method("[_]", api_color_get_index);
+        bind_method("[_]=(_)", api_color_set_index);
+    } else if (!strcmp(class_name, "Image")) {
+        bind_method("init new(_,_)", api_image_new_wh);
+        bind_method("init new(_)", api_image_new_filename);
+        bind_method("clip(_,_,_,_)", api_image_clip);
+        bind_method("clear(_)", api_image_clear);
+        bind_method("get(_,_)", api_image_get);
+        bind_method("set(_,_,_)", api_image_set);
+        bind_method("line(_,_,_,_,_)", api_image_line);
+        bind_method("fill(_,_,_,_,_)", api_image_fill);
+        bind_method("rectangle(_,_,_,_,_)", api_image_rectangle);
+        bind_method("fillRectangle(_,_,_,_,_)", api_image_fill_rectangle);
+        bind_method("circle(_,_,_,_)", api_image_circle);
+        bind_method("fillCircle(_,_,_,_)", api_image_fill_circle);
+        bind_method("blit(_,_,_,_,_,_,_)", api_image_blit);
+        bind_method("blitAlpha(_,_,_,_,_,_,_,_)", api_image_blit_alpha);
+        bind_method("blitTint(_,_,_,_,_,_,_,_)", api_image_blit_tint);
+        bind_method("print(_,_,_,_)", api_image_print);
+        bind_method("save(_)", api_image_save);
+        bind_method("width", api_image_get_width);
+        bind_method("height", api_image_get_height);
+    } else if (!strcmp(class_name, "Keyboard")) {
+        bind_method("down(_)", api_keyboard_down);
+        bind_method("pressed(_)", api_keyboard_pressed);
+    } else if (!strcmp(class_name, "Mouse")) {
+        bind_method("down(_)", api_mouse_down);
+        bind_method("pressed(_)", api_mouse_pressed);
+        bind_method("x", api_mouse_get_x);
+        bind_method("y", api_mouse_get_y);
+        bind_method("scrollX", api_mouse_get_scroll_x);
+        bind_method("scrollY", api_mouse_get_scroll_y);
+    } else if (!strcmp(class_name, "Window")) {
+        bind_method("close()", api_window_close);
+        bind_method("active", api_window_get_active);
+        bind_method("width", api_window_get_width);
+        bind_method("height", api_window_get_height);
+    } else if (!strcmp(class_name, "OS")) {
+        bind_method("name", api_os_get_name);
+        bind_method("blinkVersion", api_os_get_blink_version);
+        bind_method("args", api_os_get_args);
+    } else if (!strcmp(class_name, "Directory")) {
+        bind_method("exists(_)", api_directory_exists);
+        bind_method("list(_)", api_directory_list);
+    } else if (!strcmp(class_name, "File")) {
+        bind_method("exists(_)", api_file_exists);
+        bind_method("size(_)", api_file_size);
+        bind_method("modTime(_)", api_file_mod_time);
+        bind_method("read(_)", api_file_read);
+        bind_method("write(_,_)", api_file_write);
+    }
+
+    return NULL;
+}
+
+static WrenForeignClassMethods wren_bind_foreign_class(WrenVM *vm, const char *module, const char *class_name) {
+    WrenForeignClassMethods methods = { 0 };
+
+    if (!strcmp(class_name, "Color")) {
+        methods.allocate = api_color_allocate;
+    } else if (!strcmp(class_name, "Image")) {
+        methods.allocate = api_image_allocate;
+        methods.finalize = api_image_finalize;
+    }
+
+    return methods;
 }
 
 static void wren_write(WrenVM *vm, const char *text) {
     printf("%s", text);
 }
 
-static void wren_error(WrenVM *vm, WrenErrorType type, const char *module, int line, const char *message)
-{
+static void wren_error(WrenVM *vm, WrenErrorType type, const char *module, int line, const char *message) {
     blink_state *state = wrenGetUserData(vm);
 
     int max_width = state->width / 8;
@@ -100,171 +215,9 @@ static void wren_error(WrenVM *vm, WrenErrorType type, const char *module, int l
     }
 }
 
-static WrenLoadModuleResult wren_load_module(WrenVM *vm, const char *name) {
-    WrenLoadModuleResult result = { 0 };
-
-    if (!strcmp(name, "meta") || !strcmp(name, "random"))
-        return result;
-
-    if (!strcmp(name, "blink")) {
-        result.source = api_source;
-        return result;
-    }
-
-    return result;
-}
-
-static WrenForeignClassMethods wren_bind_foreign_class(WrenVM *vm, const char *module, const char *class_name) {
-    WrenForeignClassMethods methods = { 0 };
-
-    if (!strcmp(class_name, "Image")) {
-        methods.allocate = api_image_allocate;
-        methods.finalize = api_image_finalize;
-    } else if (!strcmp(class_name, "Color")) {
-        methods.allocate = api_color_allocate;
-    }
-
-    return methods;
-}
-
-static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *module, const char *class_name, bool is_static, const char *signature) {
-    if (!strcmp(class_name, "Graphics")) {
-        if (!strcmp(signature, "screenshot()"))
-            return api_graphics_screenshot;
-        if (!strcmp(signature, "measure(_)"))
-            return api_graphics_measure;
-        if (!strcmp(signature, "clear(_)"))
-            return api_graphics_clear;
-        if (!strcmp(signature, "clip(_,_,_,_)"))
-            return api_graphics_clip;
-        if (!strcmp(signature, "set(_,_,_)"))
-            return api_graphics_set;
-        if (!strcmp(signature, "get(_,_)"))
-            return api_graphics_get;
-        if (!strcmp(signature, "fill(_,_,_,_,_)"))
-            return api_graphics_fill;
-        if (!strcmp(signature, "line(_,_,_,_,_)"))
-            return api_graphics_line;
-        if (!strcmp(signature, "rectangle(_,_,_,_,_)"))
-            return api_graphics_rectangle;
-        if (!strcmp(signature, "fillRectangle(_,_,_,_,_)"))
-            return api_graphics_fill_rectangle;
-        if (!strcmp(signature, "circle(_,_,_,_)"))
-            return api_graphics_circle;
-        if (!strcmp(signature, "fillCircle(_,_,_,_)"))
-            return api_graphics_fill_circle;
-        if (!strcmp(signature, "blit(_,_,_,_,_,_,_)"))
-            return api_graphics_blit;
-        if (!strcmp(signature, "blitAlpha(_,_,_,_,_,_,_,_)"))
-            return api_graphics_blit_alpha;
-        if (!strcmp(signature, "blitTint(_,_,_,_,_,_,_,_)"))
-            return api_graphics_blit_tint;
-        if (!strcmp(signature, "print(_,_,_,_)"))
-            return api_graphics_print;
-        if (!strcmp(signature, "clearColor=(_)"))
-            return api_graphics_set_clear_color;
-    } else if (!strcmp(class_name, "Window")) {
-        if (!strcmp(signature, "active"))
-            return api_window_get_active;
-        if (!strcmp(signature, "width"))
-            return api_window_get_width;
-        if (!strcmp(signature, "height"))
-            return api_window_get_height;
-        if (!strcmp(signature, "close()"))
-            return api_window_close;
-    } else if (!strcmp(class_name, "Directory")) {
-        if (!strcmp(signature, "exists(_)"))
-            return api_directory_exists;
-        if (!strcmp(signature, "list(_)"))
-            return api_directory_list;
-    } else if (!strcmp(class_name, "File")) {
-        if (!strcmp(signature, "exists(_)"))
-            return api_file_exists;
-        if (!strcmp(signature, "size(_)"))
-            return api_file_size;
-        if (!strcmp(signature, "modTime(_)"))
-            return api_file_mod_time;
-        if (!strcmp(signature, "read(_)"))
-            return api_file_read;
-        if (!strcmp(signature, "write(_,_)"))
-            return api_file_write;
-    } else if (!strcmp(class_name, "Mouse")) {
-        if (!strcmp(signature, "down(_)"))
-            return api_mouse_down;
-        if (!strcmp(signature, "pressed(_)"))
-            return api_mouse_pressed;
-        if (!strcmp(signature, "x"))
-            return api_mouse_get_x;
-        if (!strcmp(signature, "y"))
-            return api_mouse_get_y;
-        if (!strcmp(signature, "scrollX"))
-            return api_mouse_get_scroll_x;
-        if (!strcmp(signature, "scrollY"))
-            return api_mouse_get_scroll_y;
-    } else if (!strcmp(class_name, "Keyboard")) {
-        if (!strcmp(signature, "down(_)"))
-            return api_keyboard_down;
-        if (!strcmp(signature, "pressed(_)"))
-            return api_keyboard_pressed;
-    } else if (!strcmp(class_name, "OS")) {
-        if (!strcmp(signature, "name"))
-            return api_os_get_name;
-        if (!strcmp(signature, "blinkVersion"))
-            return api_os_get_blink_version;
-        if (!strcmp(signature, "args"))
-            return api_os_get_args;
-    } else if (!strcmp(class_name, "Color")) {
-        if (!strcmp(signature, "init new(_,_,_,_)"))
-            return api_color_new_rgba;
-        if (!strcmp(signature, "init new(_,_,_)"))
-            return api_color_new_rgb;
-        if (!strcmp(signature, "[_]"))
-            return api_color_get_index;
-        if (!strcmp(signature, "[_]=(_)"))
-            return api_color_set_index;
-    } else if (!strcmp(class_name, "Image")) {
-        if (!strcmp(signature, "init new(_,_)"))
-            return api_image_new_wh;
-        if (!strcmp(signature, "init new(_)"))
-            return api_image_new_filename;
-        if (!strcmp(signature, "save(_)"))
-            return api_image_save;
-        if (!strcmp(signature, "clear(_)"))
-            return api_image_clear;
-        if (!strcmp(signature, "clip(_,_,_,_)"))
-            return api_image_clip;
-        if (!strcmp(signature, "set(_,_,_)"))
-            return api_image_set;
-        if (!strcmp(signature, "get(_,_)"))
-            return api_image_get;
-        if (!strcmp(signature, "fill(_,_,_,_,_)"))
-            return api_image_fill;
-        if (!strcmp(signature, "line(_,_,_,_,_)"))
-            return api_image_line;
-        if (!strcmp(signature, "rectangle(_,_,_,_,_)"))
-            return api_image_rectangle;
-        if (!strcmp(signature, "fillRectangle(_,_,_,_,_)"))
-            return api_image_fill_rectangle;
-        if (!strcmp(signature, "circle(_,_,_,_)"))
-            return api_image_circle;
-        if (!strcmp(signature, "fillCircle(_,_,_,_)"))
-            return api_image_fill_circle;
-        if (!strcmp(signature, "blit(_,_,_,_,_,_,_)"))
-            return api_image_blit;
-        if (!strcmp(signature, "blitAlpha(_,_,_,_,_,_,_,_)"))
-            return api_image_blit_alpha;
-        if (!strcmp(signature, "blitTint(_,_,_,_,_,_,_,_)"))
-            return api_image_blit_tint;
-        if (!strcmp(signature, "print(_,_,_,_)"))
-            return api_image_print;
-        if (!strcmp(signature, "width"))
-            return api_image_get_width;
-        if (!strcmp(signature, "height"))
-            return api_image_get_height;
-    }
-
-    return NULL;
-}
+//--------------------
+// Cri Callbacks
+//--------------------
 
 static void on_active(cri_window *window, bool is_active) {
     blink_state *state = (blink_state*)cri_get_user_data(window);
@@ -272,7 +225,7 @@ static void on_active(cri_window *window, bool is_active) {
     if (!state->error) {
         wrenSetSlotHandle(state->vm, 0, state->game);
         wrenSetSlotBool(state->vm, 1, is_active);
-        wrenCall(state->vm, state->on_mouse_move);
+        wrenCall(state->vm, state->on_active);
     }
 }
 
@@ -299,6 +252,136 @@ static void on_resize(cri_window *window, int width, int height) {
 
 static void on_keyboard(cri_window *window, cri_key key, cri_mod_key mod, bool is_pressed) {
     blink_state *state = (blink_state*)cri_get_user_data(window);
+
+    if (!state->error) {
+        wrenSetSlotHandle(state->vm, 0, state->game);
+
+        switch (key) {
+        case KB_KEY_UNKNOWN: wrenSetSlotString(state->vm, 1, "unknown"); break;
+        case KB_KEY_SPACE: wrenSetSlotString(state->vm, 1, "space"); break;
+        case KB_KEY_APOSTROPHE: wrenSetSlotString(state->vm, 1, "apostrophe"); break;
+        case KB_KEY_COMMA: wrenSetSlotString(state->vm, 1, "comma"); break;
+        case KB_KEY_MINUS: wrenSetSlotString(state->vm, 1, "minus"); break;
+        case KB_KEY_PERIOD: wrenSetSlotString(state->vm, 1, "period"); break;
+        case KB_KEY_SLASH: wrenSetSlotString(state->vm, 1, "slash"); break;
+        case KB_KEY_0: wrenSetSlotString(state->vm, 1, "0"); break;
+        case KB_KEY_1: wrenSetSlotString(state->vm, 1, "1"); break;
+        case KB_KEY_2: wrenSetSlotString(state->vm, 1, "2"); break;
+        case KB_KEY_3: wrenSetSlotString(state->vm, 1, "3"); break;
+        case KB_KEY_4: wrenSetSlotString(state->vm, 1, "4"); break;
+        case KB_KEY_5: wrenSetSlotString(state->vm, 1, "5"); break;
+        case KB_KEY_6: wrenSetSlotString(state->vm, 1, "6"); break;
+        case KB_KEY_7: wrenSetSlotString(state->vm, 1, "7"); break;
+        case KB_KEY_8: wrenSetSlotString(state->vm, 1, "8"); break;
+        case KB_KEY_9: wrenSetSlotString(state->vm, 1, "9"); break;
+        case KB_KEY_SEMICOLON: wrenSetSlotString(state->vm, 1, "semicolon"); break;
+        case KB_KEY_EQUAL: wrenSetSlotString(state->vm, 1, "equal"); break;
+        case KB_KEY_A: wrenSetSlotString(state->vm, 1, "a"); break;
+        case KB_KEY_B: wrenSetSlotString(state->vm, 1, "b"); break;
+        case KB_KEY_C: wrenSetSlotString(state->vm, 1, "c"); break;
+        case KB_KEY_D: wrenSetSlotString(state->vm, 1, "d"); break;
+        case KB_KEY_E: wrenSetSlotString(state->vm, 1, "e"); break;
+        case KB_KEY_F: wrenSetSlotString(state->vm, 1, "f"); break;
+        case KB_KEY_G: wrenSetSlotString(state->vm, 1, "g"); break;
+        case KB_KEY_H: wrenSetSlotString(state->vm, 1, "h"); break;
+        case KB_KEY_I: wrenSetSlotString(state->vm, 1, "i"); break;
+        case KB_KEY_J: wrenSetSlotString(state->vm, 1, "j"); break;
+        case KB_KEY_K: wrenSetSlotString(state->vm, 1, "k"); break;
+        case KB_KEY_L: wrenSetSlotString(state->vm, 1, "l"); break;
+        case KB_KEY_M: wrenSetSlotString(state->vm, 1, "m"); break;
+        case KB_KEY_N: wrenSetSlotString(state->vm, 1, "n"); break;
+        case KB_KEY_O: wrenSetSlotString(state->vm, 1, "o"); break;
+        case KB_KEY_P: wrenSetSlotString(state->vm, 1, "p"); break;
+        case KB_KEY_Q: wrenSetSlotString(state->vm, 1, "q"); break;
+        case KB_KEY_R: wrenSetSlotString(state->vm, 1, "r"); break;
+        case KB_KEY_S: wrenSetSlotString(state->vm, 1, "s"); break;
+        case KB_KEY_T: wrenSetSlotString(state->vm, 1, "t"); break;
+        case KB_KEY_U: wrenSetSlotString(state->vm, 1, "u"); break;
+        case KB_KEY_V: wrenSetSlotString(state->vm, 1, "v"); break;
+        case KB_KEY_W: wrenSetSlotString(state->vm, 1, "w"); break;
+        case KB_KEY_X: wrenSetSlotString(state->vm, 1, "x"); break;
+        case KB_KEY_Y: wrenSetSlotString(state->vm, 1, "y"); break;
+        case KB_KEY_Z: wrenSetSlotString(state->vm, 1, "z"); break;
+        case KB_KEY_LEFT_BRACKET: wrenSetSlotString(state->vm, 1, "left_bracket"); break;
+        case KB_KEY_BACKSLASH: wrenSetSlotString(state->vm, 1, "backslash"); break;
+        case KB_KEY_RIGHT_BRACKET: wrenSetSlotString(state->vm, 1, "right_bracket"); break;
+        case KB_KEY_GRAVE_ACCENT: wrenSetSlotString(state->vm, 1, "grave_accent"); break;
+        case KB_KEY_WORLD_1: wrenSetSlotString(state->vm, 1, "world_1"); break;
+        case KB_KEY_WORLD_2: wrenSetSlotString(state->vm, 1, "world_2"); break;
+        case KB_KEY_ESCAPE: wrenSetSlotString(state->vm, 1, "escape"); break;
+        case KB_KEY_ENTER: wrenSetSlotString(state->vm, 1, "enter"); break;
+        case KB_KEY_TAB: wrenSetSlotString(state->vm, 1, "tab"); break;
+        case KB_KEY_BACKSPACE: wrenSetSlotString(state->vm, 1, "backspace"); break;
+        case KB_KEY_INSERT: wrenSetSlotString(state->vm, 1, "insert"); break;
+        case KB_KEY_DELETE: wrenSetSlotString(state->vm, 1, "delete"); break;
+        case KB_KEY_RIGHT: wrenSetSlotString(state->vm, 1, "right"); break;
+        case KB_KEY_LEFT: wrenSetSlotString(state->vm, 1, "left"); break;
+        case KB_KEY_DOWN: wrenSetSlotString(state->vm, 1, "down"); break;
+        case KB_KEY_UP: wrenSetSlotString(state->vm, 1, "up"); break;
+        case KB_KEY_PAGE_UP: wrenSetSlotString(state->vm, 1, "page_up"); break;
+        case KB_KEY_PAGE_DOWN: wrenSetSlotString(state->vm, 1, "page_down"); break;
+        case KB_KEY_HOME: wrenSetSlotString(state->vm, 1, "home"); break;
+        case KB_KEY_END: wrenSetSlotString(state->vm, 1, "end"); break;
+        case KB_KEY_CAPS_LOCK: wrenSetSlotString(state->vm, 1, "caps_lock"); break;
+        case KB_KEY_SCROLL_LOCK: wrenSetSlotString(state->vm, 1, "scroll_lock"); break;
+        case KB_KEY_NUM_LOCK: wrenSetSlotString(state->vm, 1, "num_lock"); break;
+        case KB_KEY_PRINT_SCREEN: wrenSetSlotString(state->vm, 1, "print_screen"); break;
+        case KB_KEY_PAUSE: wrenSetSlotString(state->vm, 1, "pause"); break;
+        case KB_KEY_F1: wrenSetSlotString(state->vm, 1, "f1"); break;
+        case KB_KEY_F2: wrenSetSlotString(state->vm, 1, "f2"); break;
+        case KB_KEY_F3: wrenSetSlotString(state->vm, 1, "f3"); break;
+        case KB_KEY_F4: wrenSetSlotString(state->vm, 1, "f4"); break;
+        case KB_KEY_F5: wrenSetSlotString(state->vm, 1, "f5"); break;
+        case KB_KEY_F6: wrenSetSlotString(state->vm, 1, "f6"); break;
+        case KB_KEY_F7: wrenSetSlotString(state->vm, 1, "f7"); break;
+        case KB_KEY_F8: wrenSetSlotString(state->vm, 1, "f8"); break;
+        case KB_KEY_F9: wrenSetSlotString(state->vm, 1, "f9"); break;
+        case KB_KEY_F10: wrenSetSlotString(state->vm, 1, "f10"); break;
+        case KB_KEY_F11: wrenSetSlotString(state->vm, 1, "f11"); break;
+        case KB_KEY_F12: wrenSetSlotString(state->vm, 1, "f12"); break;
+        case KB_KEY_F13: wrenSetSlotString(state->vm, 1, "f13"); break;
+        case KB_KEY_F14: wrenSetSlotString(state->vm, 1, "f14"); break;
+        case KB_KEY_F15: wrenSetSlotString(state->vm, 1, "f15"); break;
+        case KB_KEY_F16: wrenSetSlotString(state->vm, 1, "f16"); break;
+        case KB_KEY_F17: wrenSetSlotString(state->vm, 1, "f17"); break;
+        case KB_KEY_F18: wrenSetSlotString(state->vm, 1, "f18"); break;
+        case KB_KEY_F19: wrenSetSlotString(state->vm, 1, "f19"); break;
+        case KB_KEY_F20: wrenSetSlotString(state->vm, 1, "f20"); break;
+        case KB_KEY_F21: wrenSetSlotString(state->vm, 1, "f21"); break;
+        case KB_KEY_F22: wrenSetSlotString(state->vm, 1, "f22"); break;
+        case KB_KEY_F23: wrenSetSlotString(state->vm, 1, "f23"); break;
+        case KB_KEY_F24: wrenSetSlotString(state->vm, 1, "f24"); break;
+        case KB_KEY_F25: wrenSetSlotString(state->vm, 1, "f25"); break;
+        case KB_KEY_KP_0: wrenSetSlotString(state->vm, 1, "kp0"); break;
+        case KB_KEY_KP_1: wrenSetSlotString(state->vm, 1, "kp1"); break;
+        case KB_KEY_KP_2: wrenSetSlotString(state->vm, 1, "kp2"); break;
+        case KB_KEY_KP_3: wrenSetSlotString(state->vm, 1, "kp3"); break;
+        case KB_KEY_KP_4: wrenSetSlotString(state->vm, 1, "kp4"); break;
+        case KB_KEY_KP_5: wrenSetSlotString(state->vm, 1, "kp5"); break;
+        case KB_KEY_KP_6: wrenSetSlotString(state->vm, 1, "kp6"); break;
+        case KB_KEY_KP_7: wrenSetSlotString(state->vm, 1, "kp7"); break;
+        case KB_KEY_KP_8: wrenSetSlotString(state->vm, 1, "kp8"); break;
+        case KB_KEY_KP_9: wrenSetSlotString(state->vm, 1, "kp9"); break;
+        case KB_KEY_KP_DECIMAL: wrenSetSlotString(state->vm, 1, "decimal"); break;
+        case KB_KEY_KP_DIVIDE: wrenSetSlotString(state->vm, 1, "divide"); break;
+        case KB_KEY_KP_MULTIPLY: wrenSetSlotString(state->vm, 1, "multiply"); break;
+        case KB_KEY_KP_SUBTRACT: wrenSetSlotString(state->vm, 1, "subtract"); break;
+        case KB_KEY_KP_ADD: wrenSetSlotString(state->vm, 1, "add"); break;
+        case KB_KEY_KP_ENTER: wrenSetSlotString(state->vm, 1, "enter"); break;
+        case KB_KEY_KP_EQUAL: wrenSetSlotString(state->vm, 1, "equal"); break;
+        case KB_KEY_LEFT_SHIFT: wrenSetSlotString(state->vm, 1, "left_shift"); break;
+        case KB_KEY_LEFT_CONTROL: wrenSetSlotString(state->vm, 1, "left_control"); break;
+        case KB_KEY_LEFT_ALT: wrenSetSlotString(state->vm, 1, "left_alt"); break;
+        case KB_KEY_LEFT_SUPER: wrenSetSlotString(state->vm, 1, "left_super"); break;
+        case KB_KEY_RIGHT_SHIFT: wrenSetSlotString(state->vm, 1, "right_shift"); break;
+        case KB_KEY_RIGHT_CONTROL: wrenSetSlotString(state->vm, 1, "right_control"); break;
+        case KB_KEY_RIGHT_ALT: wrenSetSlotString(state->vm, 1, "right_alt"); break;
+        case KB_KEY_RIGHT_SUPER: wrenSetSlotString(state->vm, 1, "right_super"); break;
+        case KB_KEY_MENU: wrenSetSlotString(state->vm, 1, "menu"); break;
+        }
+
+        wrenCall(state->vm, state->on_keyboard);
+    }
 }
 
 static void codepoint_to_string(unsigned int codepoint, char *buffer) {

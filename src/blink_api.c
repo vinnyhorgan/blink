@@ -684,7 +684,6 @@ void api_os_get_args(WrenVM *vm) {
     }
 }
 
-
 void api_directory_exists(WrenVM *vm) {
     blink_assert_type(vm, 1, STRING, "path");
     const char *path = wrenGetSlotString(vm, 1);
