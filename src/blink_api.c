@@ -219,6 +219,21 @@ void api_graphics_print(WrenVM *vm) {
     blink_draw_text(state->screen, state->font, text, x, y, *color);
 }
 
+void api_graphics_print_font(WrenVM *vm) {
+    blink_state *state = (blink_state*)wrenGetUserData(vm);
+    blink_assert_type(vm, 1, FOREIGN, "font");
+    blink_assert_type(vm, 2, STRING, "text");
+    blink_assert_type(vm, 3, NUM, "x");
+    blink_assert_type(vm, 4, NUM, "y");
+    blink_assert_type(vm, 5, FOREIGN, "color");
+    blink_font **font = (blink_font**)wrenGetSlotForeign(vm, 1);
+    const char *text = (char*)wrenGetSlotString(vm, 2);
+    int x = (int)wrenGetSlotDouble(vm, 3);
+    int y = (int)wrenGetSlotDouble(vm, 4);
+    blink_color *color = (blink_color*)wrenGetSlotForeign(vm, 5);
+    blink_draw_text(state->screen, *font, text, x, y, *color);
+}
+
 void api_graphics_screenshot(WrenVM *vm) {
     blink_state *state = (blink_state*)wrenGetUserData(vm);
     wrenSetSlotHandle(vm, 1, state->image_class);
@@ -232,6 +247,16 @@ void api_graphics_measure(WrenVM *vm) {
     blink_assert_type(vm, 1, STRING, "text");
     const char *text = wrenGetSlotString(vm, 1);
     wrenSetSlotDouble(vm, 0, blink_text_width(state->font, text));
+}
+
+void api_graphics_get_width(WrenVM *vm) {
+    blink_state *state = (blink_state*)wrenGetUserData(vm);
+    wrenSetSlotDouble(vm, 0, state->width);
+}
+
+void api_graphics_get_height(WrenVM *vm) {
+    blink_state *state = (blink_state*)wrenGetUserData(vm);
+    wrenSetSlotDouble(vm, 0, state->height);
 }
 
 void api_graphics_set_clear_color(WrenVM *vm) {
@@ -546,6 +571,49 @@ void api_image_print(WrenVM *vm) {
     blink_draw_text(*image, state->font, text, x, y, *color);
 }
 
+void api_image_print_font(WrenVM *vm) {
+    blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
+    blink_assert_type(vm, 1, FOREIGN, "font");
+    blink_assert_type(vm, 2, STRING, "text");
+    blink_assert_type(vm, 3, NUM, "x");
+    blink_assert_type(vm, 4, NUM, "y");
+    blink_assert_type(vm, 5, FOREIGN, "color");
+    blink_font **font = (blink_font**)wrenGetSlotForeign(vm, 1);
+    const char *text = (char*)wrenGetSlotString(vm, 2);
+    int x = (int)wrenGetSlotDouble(vm, 3);
+    int y = (int)wrenGetSlotDouble(vm, 4);
+    blink_color *color = (blink_color*)wrenGetSlotForeign(vm, 5);
+    blink_draw_text(*image, *font, text, x, y, *color);
+}
+
+void api_image_resize(WrenVM *vm) {
+    blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
+    blink_assert_type(vm, 1, NUM, "w");
+    blink_assert_type(vm, 2, NUM, "h");
+    int w = (int)wrenGetSlotDouble(vm, 1);
+    int h = (int)wrenGetSlotDouble(vm, 2);
+
+    if (w <= 0 || h <= 0) {
+        blink_abort_vm(vm, "Invalid image dimensions");
+        return;
+    }
+
+    blink_image *resized_image = blink_create_image(w, h);
+    int x_ratio = (int)(((*image)->w << 16) / w) + 1;
+    int y_ratio = (int)(((*image)->h << 16) / h) + 1;
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            int x2 = ((x * x_ratio) >> 16);
+            int y2 = ((y * y_ratio) >> 16);
+            blink_set_pixel(resized_image, x, y, blink_get_pixel(*image, x2, y2));
+        }
+    }
+
+    blink_destroy_image(*image);
+    *image = resized_image;
+}
+
 void api_image_save(WrenVM *vm) {
     blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
     blink_assert_type(vm, 1, STRING, "filename");
@@ -561,6 +629,36 @@ void api_image_get_width(WrenVM *vm) {
 void api_image_get_height(WrenVM *vm) {
     blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
     wrenSetSlotDouble(vm, 0, (*image)->h);
+}
+
+void api_font_allocate(WrenVM *vm) {
+    wrenEnsureSlots(vm, 1);
+    wrenSetSlotNewForeign(vm, 0, 0, sizeof(blink_font*));
+}
+
+void api_font_finalize(void *data) {
+    blink_font **font = (blink_font**)data;
+    blink_destroy_font(*font);
+}
+
+void api_font_new(WrenVM *vm) {
+    blink_font **font = (blink_font**)wrenGetSlotForeign(vm, 0);
+    blink_assert_type(vm, 1, STRING, "filename");
+    const char *filename = wrenGetSlotString(vm, 1);
+    blink_font *loaded_font = blink_load_font_file(filename);
+    if (!loaded_font) {
+        blink_abort_vm(vm, "Failed to load font");
+        return;
+    }
+
+    *font = loaded_font;
+}
+
+void api_font_measure(WrenVM *vm) {
+    blink_font **font = (blink_font**)wrenGetSlotForeign(vm, 0);
+    blink_assert_type(vm, 1, STRING, "text");
+    const char *text = wrenGetSlotString(vm, 1);
+    wrenSetSlotDouble(vm, 0, blink_text_width(*font, text));
 }
 
 //--------------------

@@ -106,8 +106,11 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         bind_method("blitAlpha(_,_,_,_,_,_,_,_)", api_graphics_blit_alpha);
         bind_method("blitTint(_,_,_,_,_,_,_,_)", api_graphics_blit_tint);
         bind_method("print(_,_,_,_)", api_graphics_print);
+        bind_method("print(_,_,_,_,_)", api_graphics_print_font);
         bind_method("screenshot()", api_graphics_screenshot);
         bind_method("measure(_)", api_graphics_measure);
+        bind_method("width", api_graphics_get_width);
+        bind_method("height", api_graphics_get_height);
         bind_method("clearColor=(_)", api_graphics_set_clear_color);
     } else if (!strcmp(class_name, "Color")) {
         bind_method("init new(_,_,_,_)", api_color_new_rgba);
@@ -131,9 +134,14 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         bind_method("blitAlpha(_,_,_,_,_,_,_,_)", api_image_blit_alpha);
         bind_method("blitTint(_,_,_,_,_,_,_,_)", api_image_blit_tint);
         bind_method("print(_,_,_,_)", api_image_print);
+        bind_method("print(_,_,_,_,_)", api_image_print_font);
+        bind_method("resize(_,_)", api_image_resize);
         bind_method("save(_)", api_image_save);
         bind_method("width", api_image_get_width);
         bind_method("height", api_image_get_height);
+    } else if (!strcmp(class_name, "Font")) {
+        bind_method("init new(_)", api_font_new);
+        bind_method("measure(_)", api_font_measure);
     } else if (!strcmp(class_name, "Keyboard")) {
         bind_method("down(_)", api_keyboard_down);
         bind_method("pressed(_)", api_keyboard_pressed);
@@ -175,6 +183,9 @@ static WrenForeignClassMethods wren_bind_foreign_class(WrenVM *vm, const char *m
     } else if (!strcmp(class_name, "Image")) {
         methods.allocate = api_image_allocate;
         methods.finalize = api_image_finalize;
+    } else if (!strcmp(class_name, "Font")) {
+        methods.allocate = api_font_allocate;
+        methods.finalize = api_font_finalize;
     }
 
     return methods;
@@ -739,23 +750,36 @@ int main(int argc, char **argv) {
 
     wrenSetSlotString(vm, 2, "targetFps");
     wrenGetMapValue(vm, 1, 2, 3);
-    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
-        cri_set_target_fps((int)wrenGetSlotDouble(vm, 3));
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM) {
+        int target_fps = (int)wrenGetSlotDouble(vm, 3);
+        if (target_fps >= 0)
+            cri_set_target_fps(target_fps);
+    }
 
     wrenSetSlotString(vm, 2, "width");
     wrenGetMapValue(vm, 1, 2, 3);
-    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
-        state.width = (int)wrenGetSlotDouble(vm, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM) {
+        int width = (int)wrenGetSlotDouble(vm, 3);
+        if (width > 0)
+            state.width = width;
+    }
 
     wrenSetSlotString(vm, 2, "height");
     wrenGetMapValue(vm, 1, 2, 3);
-    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
-        state.height = (int)wrenGetSlotDouble(vm, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM) {
+        int height = (int)wrenGetSlotDouble(vm, 3);
+        if (height > 0)
+            state.height = height;
+    }
 
     wrenSetSlotString(vm, 2, "scale");
     wrenGetMapValue(vm, 1, 2, 3);
-    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
-        state.scale = (int)wrenGetSlotDouble(vm, 3);
+    if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM) {
+        float scale = (float)wrenGetSlotDouble(vm, 3);
+        if (scale >= 1) {
+            state.scale = scale;
+        }
+    }
 
     wrenSetSlotHandle(vm, 0, state.game);
     wrenCall(vm, state.on_init);

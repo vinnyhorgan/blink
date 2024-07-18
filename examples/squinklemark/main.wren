@@ -55,11 +55,11 @@ class Game is BaseGame {
             s.pos.x = s.pos.x + s.spd.x
             s.pos.y = s.pos.y + s.spd.y
 
-            if (((s.pos.x + _squinkleImage.width / 2) > 320) || ((s.pos.x + _squinkleImage.width / 2) < 0)) {
+            if (((s.pos.x + _squinkleImage.width / 2) > Graphics.width) || ((s.pos.x + _squinkleImage.width / 2) < 0)) {
                 s.spd.x = -s.spd.x
             }
 
-            if (((s.pos.y + _squinkleImage.height / 2) > 240) || ((s.pos.y + _squinkleImage.height / 2 - 28) < 0)) {
+            if (((s.pos.y + _squinkleImage.height / 2) > Graphics.height) || ((s.pos.y + _squinkleImage.height / 2 - 28) < 0)) {
                 s.spd.y = -s.spd.y
             }
         }
@@ -70,7 +70,7 @@ class Game is BaseGame {
             Graphics.blitTint(_squinkleImage, s.pos.x, s.pos.y, s.col)
         }
 
-        Graphics.fill(0, 0, 320, 28, Color.black)
+        Graphics.fill(0, 0, Graphics.width, 28, Color.black)
 
         Graphics.print("FPS: %(_fps.floor)", 10, 10, Color.white)
         Graphics.print("Squinkles: %(_squinkles.count)", 100, 10, Color.white)

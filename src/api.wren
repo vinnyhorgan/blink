@@ -17,6 +17,7 @@ class Graphics {
     foreign static blitAlpha(image, dx, dy, sx, sy, w, h, alpha)
     foreign static blitTint(image, dx, dy, sx, sy, w, h, tint)
     foreign static print(text, x, y, color)
+    foreign static print(font, text, x, y, color)
     foreign static screenshot()
     foreign static measure(text)
 
@@ -40,6 +41,8 @@ class Graphics {
         blitTint(image, x, y, 0, 0, image.width, image.height, tint)
     }
 
+    foreign static width
+    foreign static height
     foreign static clearColor=(v)
 }
 
@@ -99,6 +102,8 @@ foreign class Image {
     foreign blitAlpha(image, dx, dy, sx, sy, w, h, alpha)
     foreign blitTint(image, dx, dy, sx, sy, w, h, tint)
     foreign print(text, x, y, color)
+    foreign print(font, text, x, y, color)
+    foreign resize(w, h)
     foreign save(filename)
 
     clip() {
@@ -123,6 +128,12 @@ foreign class Image {
 
     foreign width
     foreign height
+}
+
+foreign class Font {
+    foreign construct new(filename)
+
+    foreign measure(text)
 }
 
 //--------------------

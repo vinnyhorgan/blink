@@ -60,8 +60,11 @@ void api_graphics_blit(WrenVM *vm);
 void api_graphics_blit_alpha(WrenVM *vm);
 void api_graphics_blit_tint(WrenVM *vm);
 void api_graphics_print(WrenVM *vm);
+void api_graphics_print_font(WrenVM *vm);
 void api_graphics_screenshot(WrenVM *vm);
 void api_graphics_measure(WrenVM *vm);
+void api_graphics_get_width(WrenVM *vm);
+void api_graphics_get_height(WrenVM *vm);
 void api_graphics_set_clear_color(WrenVM *vm);
 
 void api_color_allocate(WrenVM *vm);
@@ -88,9 +91,16 @@ void api_image_blit(WrenVM *vm);
 void api_image_blit_alpha(WrenVM *vm);
 void api_image_blit_tint(WrenVM *vm);
 void api_image_print(WrenVM *vm);
+void api_image_print_font(WrenVM *vm);
+void api_image_resize(WrenVM *vm);
 void api_image_save(WrenVM *vm);
 void api_image_get_width(WrenVM *vm);
 void api_image_get_height(WrenVM *vm);
+
+void api_font_allocate(WrenVM *vm);
+void api_font_finalize(void *data);
+void api_font_new(WrenVM *vm);
+void api_font_measure(WrenVM *vm);
 
 //--------------------
 // Input
