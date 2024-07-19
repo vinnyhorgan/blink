@@ -161,6 +161,8 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         bind_method("name", api_os_get_name);
         bind_method("blinkVersion", api_os_get_blink_version);
         bind_method("args", api_os_get_args);
+        bind_method("clipboard", api_os_get_clipboard);
+        bind_method("clipboard=(_)", api_os_set_clipboard);
     } else if (!strcmp(class_name, "Directory")) {
         bind_method("exists(_)", api_directory_exists);
         bind_method("list(_)", api_directory_list);

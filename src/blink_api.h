@@ -128,6 +128,8 @@ void api_window_get_height(WrenVM *vm);
 void api_os_get_name(WrenVM *vm);
 void api_os_get_blink_version(WrenVM *vm);
 void api_os_get_args(WrenVM *vm);
+void api_os_get_clipboard(WrenVM *vm);
+void api_os_set_clipboard(WrenVM *vm);
 
 void api_directory_exists(WrenVM *vm);
 void api_directory_list(WrenVM *vm);

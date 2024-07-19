@@ -782,6 +782,21 @@ void api_os_get_args(WrenVM *vm) {
     }
 }
 
+void api_os_get_clipboard(WrenVM *vm) {
+    const char *clipboard = cri_get_clipboard_text();
+    if (clipboard) {
+        wrenEnsureSlots(vm, 1);
+        wrenSetSlotString(vm, 0, clipboard);
+        free((void*)clipboard);
+    }
+}
+
+void api_os_set_clipboard(WrenVM *vm) {
+    blink_assert_type(vm, 1, STRING, "text");
+    const char *text = wrenGetSlotString(vm, 1);
+    cri_set_clipboard_text(text);
+}
+
 void api_directory_exists(WrenVM *vm) {
     blink_assert_type(vm, 1, STRING, "path");
     const char *path = wrenGetSlotString(vm, 1);

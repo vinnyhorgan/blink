@@ -171,6 +171,8 @@ class OS {
     foreign static name
     foreign static blinkVersion
     foreign static args
+    foreign static clipboard
+    foreign static clipboard=(v)
 }
 
 class Directory {

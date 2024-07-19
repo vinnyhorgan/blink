@@ -172,6 +172,8 @@ static const char *api_source =
 "    foreign static name\n"
 "    foreign static blinkVersion\n"
 "    foreign static args\n"
+"    foreign static clipboard\n"
+"    foreign static clipboard=(v)\n"
 "}\n"
 "\n"
 "class Directory {\n"
