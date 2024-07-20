@@ -40,6 +40,7 @@ typedef struct {
     WrenHandle *on_mouse_button;
     WrenHandle *on_mouse_move;
     WrenHandle *on_mouse_scroll;
+    WrenHandle *on_drop;
 } blink_state;
 
 //--------------------

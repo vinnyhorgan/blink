@@ -205,4 +205,5 @@ static const char *api_source =
 "    mouseButton(button, pressed) {}\n"
 "    mouseMove(x, y) {}\n"
 "    mouseScroll(dx, dy) {}\n"
+"    drop(paths) {}\n"
 "}\n";

@@ -473,6 +473,22 @@ static void on_mouse_scroll(cri_window *window, cri_mod_key mod, float dx, float
     }
 }
 
+static void on_drop(cri_window *window, int count, const char **paths) {
+    blink_state *state = (blink_state*)cri_get_user_data(window);
+
+    if (!state->error) {
+        wrenSetSlotHandle(state->vm, 0, state->game);
+        wrenSetSlotNewList(state->vm, 1);
+
+        for (int i = 0; i < count; i++) {
+            wrenSetSlotString(state->vm, 2, paths[i]);
+            wrenInsertInList(state->vm, 1, i, 2);
+        }
+
+        wrenCall(state->vm, state->on_drop);
+    }
+}
+
 static void *default_font_data;
 static int default_font_size;
 
@@ -673,6 +689,7 @@ int main(int argc, char **argv) {
     state.on_mouse_button = wrenMakeCallHandle(vm, "mouseButton(_,_)");
     state.on_mouse_move = wrenMakeCallHandle(vm, "mouseMove(_,_)");
     state.on_mouse_scroll = wrenMakeCallHandle(vm, "mouseScroll(_,_)");
+    state.on_drop = wrenMakeCallHandle(vm, "drop(_)");
 
     wrenEnsureSlots(vm, 4);
     wrenSetSlotNewMap(vm, 1);
@@ -799,6 +816,7 @@ error:
     cri_set_mouse_button_cb(state.window, on_mouse_button);
     cri_set_mouse_move_cb(state.window, on_mouse_move);
     cri_set_mouse_scroll_cb(state.window, on_mouse_scroll);
+    cri_set_drop_cb(state.window, on_drop);
 
     cri_timer *timer = cri_timer_create();
     double dt = 0;

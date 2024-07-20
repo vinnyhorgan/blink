@@ -204,4 +204,5 @@ class BaseGame {
     mouseButton(button, pressed) {}
     mouseMove(x, y) {}
     mouseScroll(dx, dy) {}
+    drop(paths) {}
 }
