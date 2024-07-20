@@ -78,6 +78,7 @@ void api_image_allocate(WrenVM *vm);
 void api_image_finalize(void *data);
 void api_image_new_wh(WrenVM *vm);
 void api_image_new_filename(WrenVM *vm);
+void api_image_new_from_memory(WrenVM *vm);
 void api_image_clip(WrenVM *vm);
 void api_image_clear(WrenVM *vm);
 void api_image_get(WrenVM *vm);
@@ -95,12 +96,14 @@ void api_image_print(WrenVM *vm);
 void api_image_print_font(WrenVM *vm);
 void api_image_resize(WrenVM *vm);
 void api_image_save(WrenVM *vm);
+void api_image_save_to_memory(WrenVM *vm);
 void api_image_get_width(WrenVM *vm);
 void api_image_get_height(WrenVM *vm);
 
 void api_font_allocate(WrenVM *vm);
 void api_font_finalize(void *data);
 void api_font_new(WrenVM *vm);
+void api_font_new_from_memory(WrenVM *vm);
 void api_font_measure(WrenVM *vm);
 
 //--------------------

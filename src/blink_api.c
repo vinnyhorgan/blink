@@ -1,5 +1,7 @@
 #include "blink_api.h"
 
+#include <string.h>
+
 #define blink_abort_vm(vm, error) do {   \
         wrenSetSlotString(vm, 0, error); \
         wrenAbortFiber(vm, 0);           \
@@ -367,6 +369,20 @@ void api_image_new_filename(WrenVM *vm) {
     *image = loaded_image;
 }
 
+void api_image_new_from_memory(WrenVM *vm) {
+    blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
+    blink_assert_type(vm, 1, STRING, "data");
+    int size;
+    const char *data = wrenGetSlotBytes(vm, 1, &size);
+    blink_image *loaded_image = blink_load_image_mem((void*)data, size);
+    if (!loaded_image) {
+        blink_abort_vm(vm, "Failed to load image");
+        return;
+    }
+
+    *image = loaded_image;
+}
+
 void api_image_clip(WrenVM *vm) {
     blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
     blink_assert_type(vm, 1, NUM, "x");
@@ -616,9 +632,24 @@ void api_image_resize(WrenVM *vm) {
 
 void api_image_save(WrenVM *vm) {
     blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
-    blink_assert_type(vm, 1, STRING, "filename");
-    const char *filename = wrenGetSlotString(vm, 1);
-    blink_save_image(*image, filename);
+    blink_assert_type(vm, 1, STRING, "type");
+    blink_assert_type(vm, 2, STRING, "filename");
+    const char *type = wrenGetSlotString(vm, 1);
+    const char *filename = wrenGetSlotString(vm, 2);
+
+    if (!strcmp(type, "png") && !strcmp(type, "jpg")) {
+        blink_abort_vm(vm, "Invalid image type (png or jpg)");
+        return;
+    }
+
+    blink_save_image(*image, type, filename);
+}
+
+void api_image_save_to_memory(WrenVM *vm) {
+    blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
+    int size;
+    void *data = blink_save_image_mem(*image, &size);
+    wrenSetSlotBytes(vm, 0, data, size);
 }
 
 void api_image_get_width(WrenVM *vm) {
@@ -646,6 +677,20 @@ void api_font_new(WrenVM *vm) {
     blink_assert_type(vm, 1, STRING, "filename");
     const char *filename = wrenGetSlotString(vm, 1);
     blink_font *loaded_font = blink_load_font_file(filename);
+    if (!loaded_font) {
+        blink_abort_vm(vm, "Failed to load font");
+        return;
+    }
+
+    *font = loaded_font;
+}
+
+void api_font_new_from_memory(WrenVM *vm) {
+    blink_font **font = (blink_font**)wrenGetSlotForeign(vm, 0);
+    blink_assert_type(vm, 1, STRING, "data");
+    int size;
+    const char *data = wrenGetSlotBytes(vm, 1, &size);
+    blink_font *loaded_font = blink_load_font_mem((void*)data, size);
     if (!loaded_font) {
         blink_abort_vm(vm, "Failed to load font");
         return;

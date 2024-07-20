@@ -8,6 +8,7 @@
 #define STBI_NO_HDR
 #define STBI_NO_LINEAR
 #define STBI_ONLY_PNG
+#define STBI_ONLY_JPEG
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
 
@@ -78,7 +79,7 @@ blink_image *blink_load_image_file(const char *filename) {
     return image;
 }
 
-void blink_save_image(blink_image *image, const char *filename) {
+void blink_save_image(blink_image *image, const char *type, const char *filename) {
     blink_color *image_data = (blink_color*)calloc(image->w * image->h, sizeof(blink_color));
     memcpy(image_data, image->pixels, image->w * image->h * 4);
 
@@ -89,8 +90,30 @@ void blink_save_image(blink_image *image, const char *filename) {
         p->b = t;
     }
 
-    stbi_write_png(filename, image->w, image->h, 4, image_data, image->w * 4);
+    if (!strcmp(type, "png")) {
+        stbi_write_png(filename, image->w, image->h, 4, image_data, image->w * 4);
+    } else if (!strcmp(type, "jpg")) {
+        stbi_write_jpg(filename, image->w, image->h, 4, image_data, 90);
+    }
+
     free(image_data);
+}
+
+void *blink_save_image_mem(blink_image *image, int *size) {
+    blink_color *image_data = (blink_color*)calloc(image->w * image->h, sizeof(blink_color));
+    memcpy(image_data, image->pixels, image->w * image->h * 4);
+
+    for (int i = 0; i < image->w * image->h; i++) {
+        blink_color *p = &image_data[i];
+        uint8_t t = p->r;
+        p->r = p->b;
+        p->b = t;
+    }
+
+    void *data = stbi_write_png_to_mem((const unsigned char*)image_data, image->w * 4, image->w, image->h, 4, size);
+    free(image_data);
+
+    return data;
 }
 
 void blink_destroy_image(blink_image *image) {

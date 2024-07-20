@@ -120,6 +120,7 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
     } else if (!strcmp(class_name, "Image")) {
         bind_method("init new(_,_)", api_image_new_wh);
         bind_method("init new(_)", api_image_new_filename);
+        bind_method("init fromMemory(_)", api_image_new_from_memory);
         bind_method("clip(_,_,_,_)", api_image_clip);
         bind_method("clear(_)", api_image_clear);
         bind_method("get(_,_)", api_image_get);
@@ -136,11 +137,13 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         bind_method("print(_,_,_,_)", api_image_print);
         bind_method("print(_,_,_,_,_)", api_image_print_font);
         bind_method("resize(_,_)", api_image_resize);
-        bind_method("save(_)", api_image_save);
+        bind_method("save(_,_)", api_image_save);
+        bind_method("saveToMemory()", api_image_save_to_memory);
         bind_method("width", api_image_get_width);
         bind_method("height", api_image_get_height);
     } else if (!strcmp(class_name, "Font")) {
         bind_method("init new(_)", api_font_new);
+        bind_method("init fromMemory(_)", api_font_new_from_memory);
         bind_method("measure(_)", api_font_measure);
     } else if (!strcmp(class_name, "Keyboard")) {
         bind_method("down(_)", api_keyboard_down);
