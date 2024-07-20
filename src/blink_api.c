@@ -632,24 +632,22 @@ void api_image_resize(WrenVM *vm) {
 
 void api_image_save(WrenVM *vm) {
     blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
-    blink_assert_type(vm, 1, STRING, "type");
-    blink_assert_type(vm, 2, STRING, "filename");
-    const char *type = wrenGetSlotString(vm, 1);
-    const char *filename = wrenGetSlotString(vm, 2);
-
-    if (!strcmp(type, "png") && !strcmp(type, "jpg")) {
-        blink_abort_vm(vm, "Invalid image type (png or jpg)");
-        return;
-    }
-
-    blink_save_image(*image, type, filename);
+    blink_assert_type(vm, 1, STRING, "filename");
+    const char *filename = wrenGetSlotString(vm, 1);
+    wrenSetSlotBool(vm, 0, blink_save_image(*image, filename));
 }
 
 void api_image_save_to_memory(WrenVM *vm) {
     blink_image **image = (blink_image**)wrenGetSlotForeign(vm, 0);
+    blink_assert_type(vm, 1, STRING, "type");
+    const char *type = wrenGetSlotString(vm, 1);
     int size;
-    void *data = blink_save_image_mem(*image, &size);
-    wrenSetSlotBytes(vm, 0, data, size);
+    void *data = blink_save_image_mem(*image, type, &size);
+    if (data) {
+        wrenSetSlotBytes(vm, 0, data, size);
+    } else {
+        wrenSetSlotNull(vm, 0);
+    }
 }
 
 void api_image_get_width(WrenVM *vm) {

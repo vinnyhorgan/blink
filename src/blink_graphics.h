@@ -1,6 +1,7 @@
 #ifndef BLINK_GRAPHICS_H
 #define BLINK_GRAPHICS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define blink_rgba(R, G, B, A) ((blink_color) { .r = (R), .g = (G), .b = (B), .a = (A) })
@@ -34,8 +35,8 @@ typedef struct {
 blink_image *blink_create_image(int w, int h);
 blink_image *blink_load_image_mem(void *data, int size);
 blink_image *blink_load_image_file(const char *filename);
-void blink_save_image(blink_image *image, const char *type, const char *filename);
-void *blink_save_image_mem(blink_image *image, int *size);
+bool blink_save_image(blink_image *image, const char *filename);
+void *blink_save_image_mem(blink_image *image, const char *type, int *size);
 void blink_destroy_image(blink_image *image);
 
 blink_font *blink_load_font_mem(void *data, int size);

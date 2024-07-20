@@ -105,8 +105,8 @@ foreign class Image {
     foreign print(text, x, y, color)
     foreign print(font, text, x, y, color)
     foreign resize(w, h)
-    foreign save(type, filename)
-    foreign saveToMemory()
+    foreign save(filename)
+    foreign saveToMemory(type)
 
     clip() {
         clip(0, 0, -1, -1)
@@ -126,10 +126,6 @@ foreign class Image {
 
     blitTint(image, x, y, tint) {
         blitTint(image, x, y, 0, 0, image.width, image.height, tint)
-    }
-
-    save(filename) {
-        save("png", filename)
     }
 
     foreign width

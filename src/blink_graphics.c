@@ -15,6 +15,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "lib/stb_image_write.h"
 
+#define QOI_IMPLEMENTATION
+#include "lib/qoi.h"
+
 #include "cri.h"
 
 #define EXPAND(X) ((X) + ((X) > 0))
@@ -54,11 +57,22 @@ blink_image *blink_create_image(int w, int h) {
 
 blink_image *blink_load_image_mem(void *data, int size) {
     int w, h;
-    uint8_t *png = stbi_load_from_memory(data, size, &w, &h, NULL, 4);
-    if (!png) { return NULL; }
+    uint8_t *image_data = NULL;
+
+    image_data = stbi_load_from_memory(data, size, &w, &h, NULL, 4);
+    if (!image_data) {
+        qoi_desc desc;
+        image_data = qoi_decode(data, size, &desc, 4);
+        if (!image_data)
+            return NULL;
+
+        w = desc.width;
+        h = desc.height;
+    }
+
     blink_image *image = blink_create_image(w, h);
-    memcpy(image->pixels, png, w * h * 4);
-    free(png);
+    memcpy(image->pixels, image_data, w * h * 4);
+    free(image_data);
 
     for (int i = 0; i < w * h; i++) {
         blink_color *p = &image->pixels[i];
@@ -79,7 +93,7 @@ blink_image *blink_load_image_file(const char *filename) {
     return image;
 }
 
-void blink_save_image(blink_image *image, const char *type, const char *filename) {
+bool blink_save_image(blink_image *image, const char *filename) {
     blink_color *image_data = (blink_color*)calloc(image->w * image->h, sizeof(blink_color));
     memcpy(image_data, image->pixels, image->w * image->h * 4);
 
@@ -90,16 +104,27 @@ void blink_save_image(blink_image *image, const char *type, const char *filename
         p->b = t;
     }
 
-    if (!strcmp(type, "png")) {
-        stbi_write_png(filename, image->w, image->h, 4, image_data, image->w * 4);
-    } else if (!strcmp(type, "jpg")) {
-        stbi_write_jpg(filename, image->w, image->h, 4, image_data, 90);
+    bool saved = false;
+
+    if (!strcmp(filename + strlen(filename) - 3, "png")) {
+        saved = stbi_write_png(filename, image->w, image->h, 4, image_data, image->w * 4);
+    } else if (!strcmp(filename + strlen(filename) - 3, "jpg")) {
+        saved = stbi_write_jpg(filename, image->w, image->h, 4, image_data, 90);
+    } else if (!strcmp(filename + strlen(filename) - 3, "qoi")) {
+        saved = qoi_write(filename, image_data, &(qoi_desc){
+            .width = image->w,
+            .height = image->h,
+            .channels = 4,
+            .colorspace = QOI_SRGB
+        });
     }
 
     free(image_data);
+
+    return saved;
 }
 
-void *blink_save_image_mem(blink_image *image, int *size) {
+void *blink_save_image_mem(blink_image *image, const char *type, int *size) {
     blink_color *image_data = (blink_color*)calloc(image->w * image->h, sizeof(blink_color));
     memcpy(image_data, image->pixels, image->w * image->h * 4);
 
@@ -110,7 +135,19 @@ void *blink_save_image_mem(blink_image *image, int *size) {
         p->b = t;
     }
 
-    void *data = stbi_write_png_to_mem((const unsigned char*)image_data, image->w * 4, image->w, image->h, 4, size);
+    void *data = NULL;
+
+    if (!strcmp(type, "png")) {
+        data = stbi_write_png_to_mem((const unsigned char*)image_data, image->w * 4, image->w, image->h, 4, size);
+    } else if (!strcmp(type, "qoi")) {
+        data = qoi_encode(image_data, &(qoi_desc){
+            .width = image->w,
+            .height = image->h,
+            .channels = 4,
+            .colorspace = QOI_SRGB
+        }, size);
+    }
+
     free(image_data);
 
     return data;
