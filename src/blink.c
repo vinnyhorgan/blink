@@ -146,6 +146,19 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         BIND_METHOD("init new(_)", api_font_new);
         BIND_METHOD("init fromMemory(_)", api_font_new_from_memory);
         BIND_METHOD("measure(_)", api_font_measure);
+    } else if (!strcmp(class_name, "Source")) {
+        BIND_METHOD("init new(_)", api_source_new);
+        BIND_METHOD("init fromMemory(_)", api_source_new_from_memory);
+        BIND_METHOD("play()", api_source_play);
+        BIND_METHOD("pause()", api_source_pause);
+        BIND_METHOD("stop()", api_source_stop);
+        BIND_METHOD("length", api_source_get_length);
+        BIND_METHOD("position", api_source_get_position);
+        BIND_METHOD("state", api_source_get_state);
+        BIND_METHOD("gain=(_)", api_source_set_gain);
+        BIND_METHOD("pan=(_)", api_source_set_pan);
+        BIND_METHOD("pitch=(_)", api_source_set_pitch);
+        BIND_METHOD("loop=(_)", api_source_set_loop);
     } else if (!strcmp(class_name, "Keyboard")) {
         BIND_METHOD("down(_)", api_keyboard_down);
         BIND_METHOD("pressed(_)", api_keyboard_pressed);
@@ -192,6 +205,9 @@ static WrenForeignClassMethods wren_bind_foreign_class(WrenVM *vm, const char *m
     } else if (!strcmp(class_name, "Font")) {
         methods.allocate = api_font_allocate;
         methods.finalize = api_font_finalize;
+    } else if (!strcmp(class_name, "Source")) {
+        methods.allocate = api_source_allocate;
+        methods.finalize = api_source_finalize;
     }
 
     return methods;
@@ -216,6 +232,8 @@ static void wren_error(WrenVM *vm, WrenErrorType type, const char *module, int l
         if (state->screen)
             bg_set_clip(state->screen, bg_new_rect(0, 0, -1, -1));
 
+        ba_set_master_gain(0);
+
         snprintf(formatted_message, sizeof(formatted_message), "[%s line %d] %s", module, line, message);
         word_wrap(formatted_message, max_width, wrapped_message);
         snprintf(state->error_message, sizeof(state->error_message), "COMPILE ERROR :(\n\n%s", wrapped_message);
@@ -225,6 +243,8 @@ static void wren_error(WrenVM *vm, WrenErrorType type, const char *module, int l
 
         if (state->screen)
             bg_set_clip(state->screen, bg_new_rect(0, 0, -1, -1));
+
+        ba_set_master_gain(0);
 
         snprintf(formatted_message, sizeof(formatted_message), "%s", message);
         word_wrap(formatted_message, max_width, wrapped_message);
@@ -813,6 +833,9 @@ int main(int argc, char **argv) {
         }
     }
 
+    cri_open_audio(44100, 2, on_audio, NULL);
+    ba_init(cri_get_audio_sample_rate());
+
     wrenSetSlotHandle(vm, 0, state.game);
     wrenCall(vm, state.on_init);
 
@@ -830,9 +853,6 @@ error:
     cri_set_mouse_move_cb(state.window, on_mouse_move);
     cri_set_mouse_scroll_cb(state.window, on_mouse_scroll);
     cri_set_drop_cb(state.window, on_drop);
-
-    cri_open_audio(44100, 2, on_audio, NULL);
-    ba_init(cri_get_audio_sample_rate());
 
     cri_timer *timer = cri_timer_create();
     double dt = 0;

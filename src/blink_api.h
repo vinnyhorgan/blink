@@ -107,6 +107,25 @@ void api_font_new_from_memory(WrenVM *vm);
 void api_font_measure(WrenVM *vm);
 
 //--------------------
+// Audio
+//--------------------
+
+void api_source_allocate(WrenVM *vm);
+void api_source_finalize(void *data);
+void api_source_new(WrenVM *vm);
+void api_source_new_from_memory(WrenVM *vm);
+void api_source_play(WrenVM *vm);
+void api_source_pause(WrenVM *vm);
+void api_source_stop(WrenVM *vm);
+void api_source_get_length(WrenVM *vm);
+void api_source_get_position(WrenVM *vm);
+void api_source_get_state(WrenVM *vm);
+void api_source_set_gain(WrenVM *vm);
+void api_source_set_pan(WrenVM *vm);
+void api_source_set_pitch(WrenVM *vm);
+void api_source_set_loop(WrenVM *vm);
+
+//--------------------
 // Input
 //--------------------
 

@@ -1,5 +1,7 @@
 #include "blink_api.h"
 
+#include "blink_audio.h"
+
 #include <string.h>
 
 #define ABORT_VM(vm, error) do {   \
@@ -710,6 +712,117 @@ void api_font_measure(WrenVM *vm) {
     ASSERT_TYPE(vm, 1, STRING, "text");
     const char *text = wrenGetSlotString(vm, 1);
     wrenSetSlotDouble(vm, 0, bg_text_width(*font, text));
+}
+
+//--------------------
+// Audio
+//--------------------
+
+void api_source_allocate(WrenVM *vm) {
+    wrenEnsureSlots(vm, 1);
+    wrenSetSlotNewForeign(vm, 0, 0, sizeof(ba_source*));
+}
+
+void api_source_finalize(void *data) {
+    ba_source **source = (ba_source**)data;
+    ba_destroy_source(*source);
+}
+
+void api_source_new(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, STRING, "filename");
+    const char *filename = wrenGetSlotString(vm, 1);
+    ba_source *loaded_source = ba_load_source_file(filename);
+    if (!loaded_source) {
+        ABORT_VM(vm, "Failed to load source");
+        return;
+    }
+
+    *source = loaded_source;
+}
+
+void api_source_new_from_memory(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, STRING, "data");
+    int size;
+    const char *data = wrenGetSlotBytes(vm, 1, &size);
+    ba_source *loaded_source = ba_load_source_mem((void*)data, size);
+    if (!loaded_source) {
+        ABORT_VM(vm, "Failed to load source");
+        return;
+    }
+
+    *source = loaded_source;
+}
+
+void api_source_play(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    ba_play(*source);
+}
+
+void api_source_pause(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    ba_pause(*source);
+}
+
+void api_source_stop(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    ba_stop(*source);
+}
+
+void api_source_get_length(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    wrenSetSlotDouble(vm, 0, ba_get_length(*source));
+}
+
+void api_source_get_position(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    wrenSetSlotDouble(vm, 0, ba_get_position(*source));
+}
+
+void api_source_get_state(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    int state = ba_get_state(*source);
+
+    switch (state) {
+    case BA_STATE_STOPPED:
+        wrenSetSlotString(vm, 0, "stopped");
+        break;
+    case BA_STATE_PLAYING:
+        wrenSetSlotString(vm, 0, "playing");
+        break;
+    case BA_STATE_PAUSED:
+        wrenSetSlotString(vm, 0, "paused");
+        break;
+    }
+}
+
+void api_source_set_gain(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, NUM, "gain");
+    float gain = (float)wrenGetSlotDouble(vm, 1);
+    ba_set_gain(*source, gain);
+}
+
+void api_source_set_pan(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, NUM, "pan");
+    float pan = (float)wrenGetSlotDouble(vm, 1);
+    ba_set_pan(*source, pan);
+}
+
+void api_source_set_pitch(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, NUM, "pitch");
+    float pitch = (float)wrenGetSlotDouble(vm, 1);
+    ba_set_pitch(*source, pitch);
+}
+
+void api_source_set_loop(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, BOOL, "loop");
+    bool loop = wrenGetSlotBool(vm, 1);
+    ba_set_loop(*source, loop);
 }
 
 //--------------------

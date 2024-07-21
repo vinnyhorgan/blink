@@ -140,6 +140,27 @@ foreign class Font {
 }
 
 //--------------------
+// Audio
+//--------------------
+
+foreign class Source {
+    foreign construct new(filename)
+    foreign construct fromMemory(data)
+
+    foreign play()
+    foreign pause()
+    foreign stop()
+
+    foreign length
+    foreign position
+    foreign state
+    foreign gain=(v)
+    foreign pan=(v)
+    foreign pitch=(v)
+    foreign loop=(v)
+}
+
+//--------------------
 // Input
 //--------------------
 
