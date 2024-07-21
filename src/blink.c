@@ -12,6 +12,7 @@
 
 #include "blink_api.h"
 #include "blink_graphics.h"
+#include "blink_audio.h"
 #include "api.wren.h"
 
 #define blink_min(a, b) ((a) < (b) ? (a) : (b))
@@ -492,6 +493,15 @@ static void on_drop(cri_window *window, int count, const char **paths) {
     }
 }
 
+static void on_audio(float *buffer, int frames, int channels, void *user_data) {
+    int16_t *data = (int16_t*)malloc(frames * channels * sizeof(int16_t));
+    ba_process(data, frames * channels);
+
+    for (int i = 0; i < frames * channels; i++) {
+        buffer[i] = (float)data[i] / 32767.0f;
+    }
+}
+
 static void *default_font_data;
 static int default_font_size;
 
@@ -821,6 +831,9 @@ error:
     cri_set_mouse_scroll_cb(state.window, on_mouse_scroll);
     cri_set_drop_cb(state.window, on_drop);
 
+    cri_open_audio(44100, 2, on_audio, NULL);
+    ba_init(cri_get_audio_sample_rate());
+
     cri_timer *timer = cri_timer_create();
     double dt = 0;
 
@@ -850,6 +863,8 @@ error:
 
         dt = cri_timer_dt(timer);
     } while (cri_wait_sync(state.window));
+
+    cri_close_audio();
 
 #ifdef _WIN32
     if (state.console)
