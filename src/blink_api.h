@@ -19,11 +19,11 @@ typedef struct {
     char **argv;
     int width, height;
     float scale;
-    blink_color clear_color;
-    blink_font *font;
+    bg_color clear_color;
+    bg_font *font;
     char title[256];
     map_int_t keymap;
-    blink_image *screen;
+    bg_image *screen;
     cri_window *window;
     WrenVM *vm;
     WrenHandle *color_class;

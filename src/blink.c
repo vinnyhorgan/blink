@@ -15,9 +15,9 @@
 #include "blink_audio.h"
 #include "api.wren.h"
 
-#define blink_min(a, b) ((a) < (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-#define bind_method(s, m)      \
+#define BIND_METHOD(s, m)      \
     if (!strcmp(signature, s)) \
         return m;
 
@@ -93,89 +93,89 @@ static WrenLoadModuleResult wren_load_module(WrenVM *vm, const char *name) {
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *module, const char *class_name, bool is_static, const char *signature) {
     if (!strcmp(class_name, "Graphics")) {
-        bind_method("clip(_,_,_,_)", api_graphics_clip);
-        bind_method("clear(_)", api_graphics_clear);
-        bind_method("get(_,_)", api_graphics_get);
-        bind_method("set(_,_,_)", api_graphics_set);
-        bind_method("line(_,_,_,_,_)", api_graphics_line);
-        bind_method("fill(_,_,_,_,_)", api_graphics_fill);
-        bind_method("rectangle(_,_,_,_,_)", api_graphics_rectangle);
-        bind_method("fillRectangle(_,_,_,_,_)", api_graphics_fill_rectangle);
-        bind_method("circle(_,_,_,_)", api_graphics_circle);
-        bind_method("fillCircle(_,_,_,_)", api_graphics_fill_circle);
-        bind_method("blit(_,_,_,_,_,_,_)", api_graphics_blit);
-        bind_method("blitAlpha(_,_,_,_,_,_,_,_)", api_graphics_blit_alpha);
-        bind_method("blitTint(_,_,_,_,_,_,_,_)", api_graphics_blit_tint);
-        bind_method("print(_,_,_,_)", api_graphics_print);
-        bind_method("print(_,_,_,_,_)", api_graphics_print_font);
-        bind_method("screenshot()", api_graphics_screenshot);
-        bind_method("measure(_)", api_graphics_measure);
-        bind_method("width", api_graphics_get_width);
-        bind_method("height", api_graphics_get_height);
-        bind_method("clearColor=(_)", api_graphics_set_clear_color);
+        BIND_METHOD("clip(_,_,_,_)", api_graphics_clip);
+        BIND_METHOD("clear(_)", api_graphics_clear);
+        BIND_METHOD("get(_,_)", api_graphics_get);
+        BIND_METHOD("set(_,_,_)", api_graphics_set);
+        BIND_METHOD("line(_,_,_,_,_)", api_graphics_line);
+        BIND_METHOD("fill(_,_,_,_,_)", api_graphics_fill);
+        BIND_METHOD("rectangle(_,_,_,_,_)", api_graphics_rectangle);
+        BIND_METHOD("fillRectangle(_,_,_,_,_)", api_graphics_fill_rectangle);
+        BIND_METHOD("circle(_,_,_,_)", api_graphics_circle);
+        BIND_METHOD("fillCircle(_,_,_,_)", api_graphics_fill_circle);
+        BIND_METHOD("blit(_,_,_,_,_,_,_)", api_graphics_blit);
+        BIND_METHOD("blitAlpha(_,_,_,_,_,_,_,_)", api_graphics_blit_alpha);
+        BIND_METHOD("blitTint(_,_,_,_,_,_,_,_)", api_graphics_blit_tint);
+        BIND_METHOD("print(_,_,_,_)", api_graphics_print);
+        BIND_METHOD("print(_,_,_,_,_)", api_graphics_print_font);
+        BIND_METHOD("screenshot()", api_graphics_screenshot);
+        BIND_METHOD("measure(_)", api_graphics_measure);
+        BIND_METHOD("width", api_graphics_get_width);
+        BIND_METHOD("height", api_graphics_get_height);
+        BIND_METHOD("clearColor=(_)", api_graphics_set_clear_color);
     } else if (!strcmp(class_name, "Color")) {
-        bind_method("init new(_,_,_,_)", api_color_new_rgba);
-        bind_method("init new(_,_,_)", api_color_new_rgb);
-        bind_method("[_]", api_color_get_index);
-        bind_method("[_]=(_)", api_color_set_index);
+        BIND_METHOD("init new(_,_,_,_)", api_color_new_rgba);
+        BIND_METHOD("init new(_,_,_)", api_color_new_rgb);
+        BIND_METHOD("[_]", api_color_get_index);
+        BIND_METHOD("[_]=(_)", api_color_set_index);
     } else if (!strcmp(class_name, "Image")) {
-        bind_method("init new(_,_)", api_image_new_wh);
-        bind_method("init new(_)", api_image_new_filename);
-        bind_method("init fromMemory(_)", api_image_new_from_memory);
-        bind_method("clip(_,_,_,_)", api_image_clip);
-        bind_method("clear(_)", api_image_clear);
-        bind_method("get(_,_)", api_image_get);
-        bind_method("set(_,_,_)", api_image_set);
-        bind_method("line(_,_,_,_,_)", api_image_line);
-        bind_method("fill(_,_,_,_,_)", api_image_fill);
-        bind_method("rectangle(_,_,_,_,_)", api_image_rectangle);
-        bind_method("fillRectangle(_,_,_,_,_)", api_image_fill_rectangle);
-        bind_method("circle(_,_,_,_)", api_image_circle);
-        bind_method("fillCircle(_,_,_,_)", api_image_fill_circle);
-        bind_method("blit(_,_,_,_,_,_,_)", api_image_blit);
-        bind_method("blitAlpha(_,_,_,_,_,_,_,_)", api_image_blit_alpha);
-        bind_method("blitTint(_,_,_,_,_,_,_,_)", api_image_blit_tint);
-        bind_method("print(_,_,_,_)", api_image_print);
-        bind_method("print(_,_,_,_,_)", api_image_print_font);
-        bind_method("resize(_,_)", api_image_resize);
-        bind_method("save(_)", api_image_save);
-        bind_method("saveToMemory(_)", api_image_save_to_memory);
-        bind_method("width", api_image_get_width);
-        bind_method("height", api_image_get_height);
+        BIND_METHOD("init new(_,_)", api_image_new_wh);
+        BIND_METHOD("init new(_)", api_image_new_filename);
+        BIND_METHOD("init fromMemory(_)", api_image_new_from_memory);
+        BIND_METHOD("clip(_,_,_,_)", api_image_clip);
+        BIND_METHOD("clear(_)", api_image_clear);
+        BIND_METHOD("get(_,_)", api_image_get);
+        BIND_METHOD("set(_,_,_)", api_image_set);
+        BIND_METHOD("line(_,_,_,_,_)", api_image_line);
+        BIND_METHOD("fill(_,_,_,_,_)", api_image_fill);
+        BIND_METHOD("rectangle(_,_,_,_,_)", api_image_rectangle);
+        BIND_METHOD("fillRectangle(_,_,_,_,_)", api_image_fill_rectangle);
+        BIND_METHOD("circle(_,_,_,_)", api_image_circle);
+        BIND_METHOD("fillCircle(_,_,_,_)", api_image_fill_circle);
+        BIND_METHOD("blit(_,_,_,_,_,_,_)", api_image_blit);
+        BIND_METHOD("blitAlpha(_,_,_,_,_,_,_,_)", api_image_blit_alpha);
+        BIND_METHOD("blitTint(_,_,_,_,_,_,_,_)", api_image_blit_tint);
+        BIND_METHOD("print(_,_,_,_)", api_image_print);
+        BIND_METHOD("print(_,_,_,_,_)", api_image_print_font);
+        BIND_METHOD("resize(_,_)", api_image_resize);
+        BIND_METHOD("save(_)", api_image_save);
+        BIND_METHOD("saveToMemory(_)", api_image_save_to_memory);
+        BIND_METHOD("width", api_image_get_width);
+        BIND_METHOD("height", api_image_get_height);
     } else if (!strcmp(class_name, "Font")) {
-        bind_method("init new(_)", api_font_new);
-        bind_method("init fromMemory(_)", api_font_new_from_memory);
-        bind_method("measure(_)", api_font_measure);
+        BIND_METHOD("init new(_)", api_font_new);
+        BIND_METHOD("init fromMemory(_)", api_font_new_from_memory);
+        BIND_METHOD("measure(_)", api_font_measure);
     } else if (!strcmp(class_name, "Keyboard")) {
-        bind_method("down(_)", api_keyboard_down);
-        bind_method("pressed(_)", api_keyboard_pressed);
+        BIND_METHOD("down(_)", api_keyboard_down);
+        BIND_METHOD("pressed(_)", api_keyboard_pressed);
     } else if (!strcmp(class_name, "Mouse")) {
-        bind_method("down(_)", api_mouse_down);
-        bind_method("pressed(_)", api_mouse_pressed);
-        bind_method("x", api_mouse_get_x);
-        bind_method("y", api_mouse_get_y);
-        bind_method("scrollX", api_mouse_get_scroll_x);
-        bind_method("scrollY", api_mouse_get_scroll_y);
+        BIND_METHOD("down(_)", api_mouse_down);
+        BIND_METHOD("pressed(_)", api_mouse_pressed);
+        BIND_METHOD("x", api_mouse_get_x);
+        BIND_METHOD("y", api_mouse_get_y);
+        BIND_METHOD("scrollX", api_mouse_get_scroll_x);
+        BIND_METHOD("scrollY", api_mouse_get_scroll_y);
     } else if (!strcmp(class_name, "Window")) {
-        bind_method("close()", api_window_close);
-        bind_method("active", api_window_get_active);
-        bind_method("width", api_window_get_width);
-        bind_method("height", api_window_get_height);
+        BIND_METHOD("close()", api_window_close);
+        BIND_METHOD("active", api_window_get_active);
+        BIND_METHOD("width", api_window_get_width);
+        BIND_METHOD("height", api_window_get_height);
     } else if (!strcmp(class_name, "OS")) {
-        bind_method("name", api_os_get_name);
-        bind_method("blinkVersion", api_os_get_blink_version);
-        bind_method("args", api_os_get_args);
-        bind_method("clipboard", api_os_get_clipboard);
-        bind_method("clipboard=(_)", api_os_set_clipboard);
+        BIND_METHOD("name", api_os_get_name);
+        BIND_METHOD("blinkVersion", api_os_get_blink_version);
+        BIND_METHOD("args", api_os_get_args);
+        BIND_METHOD("clipboard", api_os_get_clipboard);
+        BIND_METHOD("clipboard=(_)", api_os_set_clipboard);
     } else if (!strcmp(class_name, "Directory")) {
-        bind_method("exists(_)", api_directory_exists);
-        bind_method("list(_)", api_directory_list);
+        BIND_METHOD("exists(_)", api_directory_exists);
+        BIND_METHOD("list(_)", api_directory_list);
     } else if (!strcmp(class_name, "File")) {
-        bind_method("exists(_)", api_file_exists);
-        bind_method("size(_)", api_file_size);
-        bind_method("modTime(_)", api_file_mod_time);
-        bind_method("read(_)", api_file_read);
-        bind_method("write(_,_)", api_file_write);
+        BIND_METHOD("exists(_)", api_file_exists);
+        BIND_METHOD("size(_)", api_file_size);
+        BIND_METHOD("modTime(_)", api_file_mod_time);
+        BIND_METHOD("read(_)", api_file_read);
+        BIND_METHOD("write(_,_)", api_file_write);
     }
 
     return NULL;
@@ -214,7 +214,7 @@ static void wren_error(WrenVM *vm, WrenErrorType type, const char *module, int l
         state->error = true;
 
         if (state->screen)
-            blink_set_clip(state->screen, blink_new_rect(0, 0, -1, -1));
+            bg_set_clip(state->screen, bg_new_rect(0, 0, -1, -1));
 
         snprintf(formatted_message, sizeof(formatted_message), "[%s line %d] %s", module, line, message);
         word_wrap(formatted_message, max_width, wrapped_message);
@@ -224,7 +224,7 @@ static void wren_error(WrenVM *vm, WrenErrorType type, const char *module, int l
         state->error = true;
 
         if (state->screen)
-            blink_set_clip(state->screen, blink_new_rect(0, 0, -1, -1));
+            bg_set_clip(state->screen, bg_new_rect(0, 0, -1, -1));
 
         snprintf(formatted_message, sizeof(formatted_message), "%s", message);
         word_wrap(formatted_message, max_width, wrapped_message);
@@ -255,7 +255,7 @@ static void on_active(cri_window *window, bool is_active) {
 static void on_resize(cri_window *window, int width, int height) {
     blink_state *state = (blink_state*)cri_get_user_data(window);
 
-    state->scale = blink_min((float)width / state->width, (float)height / state->height);
+    state->scale = MIN((float)width / state->width, (float)height / state->height);
 
     float new_width = state->width * state->scale;
     float new_height = state->height * state->scale;
@@ -514,8 +514,8 @@ int main(int argc, char **argv) {
     state.width = 320;
     state.height = 240;
     state.scale = 2.0f;
-    state.clear_color = blink_rgb(0, 0, 0);
-    state.font = blink_load_font_mem(default_font_data, default_font_size);
+    state.clear_color = bg_rgb(0, 0, 0);
+    state.font = bg_load_font_mem(default_font_data, default_font_size);
     strcpy(state.title, "Blink");
 
     map_init(&state.keymap);
@@ -817,7 +817,7 @@ int main(int argc, char **argv) {
     wrenCall(vm, state.on_init);
 
 error:
-    state.screen = blink_create_image(state.width, state.height);
+    state.screen = bg_new_image(state.width, state.height);
     state.window = cri_open(state.title, state.width * state.scale, state.height * state.scale, flags);
 
     cri_set_user_data(state.window, &state);
@@ -839,8 +839,8 @@ error:
 
     do {
         if (state.error) {
-            blink_clear(state.screen, blink_rgb(255, 0, 77));
-            blink_draw_text(state.screen, state.font, state.error_message, 10, 10, blink_rgb(255, 241, 232));
+            bg_clear(state.screen, bg_rgb(255, 0, 77));
+            bg_print(state.screen, state.font, state.error_message, 10, 10, bg_rgb(255, 241, 232));
         } else {
             cri_timer_now(timer);
 
@@ -848,7 +848,7 @@ error:
             wrenSetSlotDouble(vm, 1, dt);
             res = wrenCall(vm, state.on_update);
             if (res == WREN_RESULT_SUCCESS) {
-                blink_clear(state.screen, state.clear_color);
+                bg_clear(state.screen, state.clear_color);
 
                 wrenSetSlotHandle(vm, 0, state.game);
                 wrenCall(vm, state.on_draw);
@@ -872,8 +872,8 @@ error:
 #endif
 
     map_deinit(&state.keymap);
-    blink_destroy_font(state.font);
-    blink_destroy_image(state.screen);
+    bg_destroy_font(state.font);
+    bg_destroy_image(state.screen);
 
     wrenReleaseHandle(vm, state.color_class);
     wrenReleaseHandle(vm, state.image_class);
