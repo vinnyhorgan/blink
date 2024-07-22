@@ -9,6 +9,9 @@
 #define STB_VORBIS_HEADER_ONLY
 #include "lib/stb_vorbis.c"
 
+#define QOA_IMPLEMENTATION
+#include "lib/qoa.h"
+
 #define CLAMP(x, a, b) ((x) < (a) ? (a) : (x) > (b) ? (b) : (x))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -185,6 +188,7 @@ ba_source *ba_new_source(const ba_source_info *info) {
 }
 
 static bool ogg_init(ba_source_info *info, void *data, int size, int ownsdata);
+static bool qoa_init(ba_source_info *info, void *data, int size, int ownsdata);
 static bool wav_init(ba_source_info *info, void *data, int size, int ownsdata);
 
 static int check_header(void *data, int size, char *str, int offset) {
@@ -197,6 +201,12 @@ static ba_source *new_source_from_mem(void *data, int size, int ownsdata) {
 
     if (check_header(data, size, "OggS", 0)) {
         if (!ogg_init(&info, data, size, ownsdata))
+            return NULL;
+        return ba_new_source(&info);
+    }
+
+    if (check_header(data, size, "qoaf", 0)) {
+        if (!qoa_init(&info, data, size, ownsdata))
             return NULL;
         return ba_new_source(&info);
     }
@@ -379,6 +389,77 @@ static bool ogg_init(ba_source_info *info, void *data, int size, int ownsdata) {
 }
 
 //--------------------
+// QOA
+//--------------------
+
+typedef struct {
+    qoa_desc desc;
+    int16_t *samples;
+    int idx;
+    void *data;
+} ba_qoa_stream;
+
+static void qoa_handler(ba_event *e) {
+    ba_qoa_stream *s = e->user_data;
+
+    switch (e->type)
+    {
+    case BA_EVENT_DESTROY:
+        free(s->samples);
+        free(s->data);
+        free(s);
+        break;
+
+    case BA_EVENT_SAMPLES:
+        int len = e->length / 2;
+        int16_t *buf = e->buffer;
+
+        while (len > 0) {
+            int samples_left = s->desc.samples - s->idx;
+            int n = MIN(len, samples_left);
+            memcpy(buf, s->samples + s->idx * s->desc.channels, n * s->desc.channels * sizeof(int16_t));
+            buf += n * s->desc.channels;
+            len -= n;
+            s->idx += n;
+
+            if (s->idx == s->desc.samples)
+                s->idx = 0;
+        }
+        break;
+
+    case BA_EVENT_REWIND:
+        s->idx = 0;
+        break;
+    }
+}
+
+static bool qoa_init(ba_source_info *info, void *data, int size, int ownsdata) {
+    qoa_desc desc;
+    int16_t *samples = qoa_decode(data, size, &desc);
+    if (!samples)
+        return false;
+
+    ba_qoa_stream *stream = calloc(1, sizeof(ba_qoa_stream));
+    if (!stream) {
+        free(samples);
+        return false;
+    }
+
+    stream->desc = desc;
+    stream->samples = samples;
+    stream->idx = 0;
+    if (ownsdata)
+        stream->data = data;
+
+    info->user_data = stream;
+    info->handler = qoa_handler;
+    info->samplerate = desc.samplerate;
+    info->length = desc.samples;
+
+    return true;
+}
+
+//--------------------
 // WAVE
 //--------------------
 
@@ -400,7 +481,7 @@ static char *find_subchunk(char *data, int len, char *id, int *size) {
     int idlen = strlen(id);
     char *p = data + 12;
 next:
-    *size = *((uint32_t*) (p + 4));
+    *size = *((uint32_t*)(p + 4));
     if (memcmp(p, id, idlen)) {
         p += 8 + *size;
         if (p > data + len) return NULL;
@@ -441,7 +522,7 @@ static bool read_wav(ba_wav *w, void *data, int size) {
     w->length = (sz / (bitdepth / 8)) / channels;
     w->bitdepth = bitdepth;
 
-    return NULL;
+    return true;
 }
 
 #define WAV_PROCESS_LOOP(X) \
