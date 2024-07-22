@@ -1023,3 +1023,43 @@ void api_file_write(WrenVM *vm) {
     const char *data = wrenGetSlotBytes(vm, 2, &size);
     cri_write_file(path, data, size);
 }
+
+void api_request_allocate(WrenVM *vm) {
+    wrenEnsureSlots(vm, 1);
+    wrenSetSlotNewForeign(vm, 0, 0, sizeof(blink_request));
+}
+
+void api_request_finalize(void *data) {
+    blink_request *request = (blink_request*)data;
+    naettFree(request->req);
+    naettClose(request->res);
+}
+
+void api_request_new(WrenVM *vm) {
+    blink_request *request = (blink_request*)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, STRING, "url");
+    const char *url = wrenGetSlotString(vm, 1);
+    request->req = naettRequest(url, naettMethod("GET"), naettHeader("accept", "*/*"));
+}
+
+void api_request_make(WrenVM *vm) {
+    blink_request *request = (blink_request*)wrenGetSlotForeign(vm, 0);
+    request->res = naettMake(request->req);
+}
+
+void api_request_get_complete(WrenVM *vm) {
+    blink_request *request = (blink_request*)wrenGetSlotForeign(vm, 0);
+    wrenSetSlotBool(vm, 0, naettComplete(request->res));
+}
+
+void api_request_get_status(WrenVM *vm) {
+    blink_request *request = (blink_request*)wrenGetSlotForeign(vm, 0);
+    wrenSetSlotDouble(vm, 0, naettGetStatus(request->res));
+}
+
+void api_request_get_body(WrenVM *vm) {
+    blink_request *request = (blink_request*)wrenGetSlotForeign(vm, 0);
+    int size;
+    const char *data = naettGetBody(request->res, &size);
+    wrenSetSlotBytes(vm, 0, data, size);
+}

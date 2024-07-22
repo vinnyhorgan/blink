@@ -189,6 +189,12 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         BIND_METHOD("modTime(_)", api_file_mod_time);
         BIND_METHOD("read(_)", api_file_read);
         BIND_METHOD("write(_,_)", api_file_write);
+    } else if (!strcmp(class_name, "Request")) {
+        BIND_METHOD("init new(_)", api_request_new);
+        BIND_METHOD("make()", api_request_make);
+        BIND_METHOD("complete", api_request_get_complete);
+        BIND_METHOD("status", api_request_get_status);
+        BIND_METHOD("body", api_request_get_body);
     }
 
     return NULL;
@@ -208,6 +214,9 @@ static WrenForeignClassMethods wren_bind_foreign_class(WrenVM *vm, const char *m
     } else if (!strcmp(class_name, "Source")) {
         methods.allocate = api_source_allocate;
         methods.finalize = api_source_finalize;
+    } else if (!strcmp(class_name, "Request")) {
+        methods.allocate = api_request_allocate;
+        methods.finalize = api_request_finalize;
     }
 
     return methods;
@@ -833,6 +842,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    naettInit(NULL);
     cri_open_audio(44100, 2, on_audio, NULL);
     ba_init(cri_get_audio_sample_rate());
 

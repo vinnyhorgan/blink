@@ -212,6 +212,16 @@ class File {
     foreign static write(path, data)
 }
 
+foreign class Request {
+    foreign construct new(url)
+
+    foreign make()
+
+    foreign complete
+    foreign status
+    foreign body
+}
+
 //--------------------
 // Base Game
 //--------------------

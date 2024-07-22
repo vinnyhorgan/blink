@@ -4,6 +4,7 @@
 #include "cri.h"
 #include "lib/wren.h"
 #include "lib/map.h"
+#include "lib/naett.h"
 
 #include "blink_graphics.h"
 
@@ -42,6 +43,11 @@ typedef struct {
     WrenHandle *on_mouse_scroll;
     WrenHandle *on_drop;
 } blink_state;
+
+typedef struct {
+    naettReq *req;
+    naettRes *res;
+} blink_request;
 
 //--------------------
 // Graphics
@@ -162,5 +168,13 @@ void api_file_size(WrenVM *vm);
 void api_file_mod_time(WrenVM *vm);
 void api_file_read(WrenVM *vm);
 void api_file_write(WrenVM *vm);
+
+void api_request_allocate(WrenVM *vm);
+void api_request_finalize(void *data);
+void api_request_new(WrenVM *vm);
+void api_request_make(WrenVM *vm);
+void api_request_get_complete(WrenVM *vm);
+void api_request_get_status(WrenVM *vm);
+void api_request_get_body(WrenVM *vm);
 
 #endif
