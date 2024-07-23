@@ -117,7 +117,7 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         BIND_METHOD("[_]", api_color_get_index);
         BIND_METHOD("[_]=(_)", api_color_set_index);
     } else if (!strcmp(class_name, "Image")) {
-        BIND_METHOD("init new(_,_)", api_image_new_wh);
+        BIND_METHOD("init new(_,_)", api_image_new);
         BIND_METHOD("init new(_)", api_image_new_filename);
         BIND_METHOD("init fromMemory(_)", api_image_new_from_memory);
         BIND_METHOD("clip(_,_,_,_)", api_image_clip);
@@ -146,7 +146,7 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         BIND_METHOD("measure(_)", api_font_measure);
     } else if (!strcmp(class_name, "Source")) {
         BIND_METHOD("init new(_)", api_source_new);
-        BIND_METHOD("init fromMemory(_)", api_source_new_from_memory);
+        BIND_METHOD("init fromSound(_)", api_source_new_from_sound);
         BIND_METHOD("play()", api_source_play);
         BIND_METHOD("pause()", api_source_pause);
         BIND_METHOD("stop()", api_source_stop);
@@ -157,14 +157,18 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         BIND_METHOD("pan=(_)", api_source_set_pan);
         BIND_METHOD("pitch=(_)", api_source_set_pitch);
         BIND_METHOD("loop=(_)", api_source_set_loop);
-    } else if (!strcmp(class_name, "SoundData")) {
-        BIND_METHOD("init new(_,_,_,_)", api_sound_data_new);
-        BIND_METHOD("getSample(_)", api_sound_data_get_sample);
-        BIND_METHOD("setSample(_,_)", api_sound_data_set_sample);
-        BIND_METHOD("bitDepth", api_sound_data_get_bit_depth);
-        BIND_METHOD("sampleRate", api_sound_data_get_sample_rate);
-        BIND_METHOD("channels", api_sound_data_get_channels);
-        BIND_METHOD("length", api_sound_data_get_length);
+    } else if (!strcmp(class_name, "Sound")) {
+        BIND_METHOD("init new(_,_,_,_)", api_sound_new);
+        BIND_METHOD("init new(_)", api_sound_new_filename);
+        BIND_METHOD("init fromMemory(_)", api_sound_new_from_memory);
+        BIND_METHOD("getSample(_)", api_sound_get_sample);
+        BIND_METHOD("setSample(_,_)", api_sound_set_sample);
+        BIND_METHOD("save(_)", api_sound_save);
+        BIND_METHOD("saveToMemory()", api_sound_save_to_memory);
+        BIND_METHOD("bitDepth", api_sound_get_bit_depth);
+        BIND_METHOD("sampleRate", api_sound_get_sample_rate);
+        BIND_METHOD("channels", api_sound_get_channels);
+        BIND_METHOD("length", api_sound_get_length);
     } else if (!strcmp(class_name, "Keyboard")) {
         BIND_METHOD("down(_)", api_keyboard_down);
         BIND_METHOD("pressed(_)", api_keyboard_pressed);
@@ -220,9 +224,9 @@ static WrenForeignClassMethods wren_bind_foreign_class(WrenVM *vm, const char *m
     } else if (!strcmp(class_name, "Source")) {
         methods.allocate = api_source_allocate;
         methods.finalize = api_source_finalize;
-    } else if (!strcmp(class_name, "SoundData")) {
-        methods.allocate = api_sound_data_allocate;
-        methods.finalize = api_sound_data_finalize;
+    } else if (!strcmp(class_name, "Sound")) {
+        methods.allocate = api_sound_allocate;
+        methods.finalize = api_sound_finalize;
     } else if (!strcmp(class_name, "Request")) {
         methods.allocate = api_request_allocate;
         methods.finalize = api_request_finalize;

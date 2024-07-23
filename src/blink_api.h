@@ -52,7 +52,7 @@ typedef struct {
     int samplerate;
     int channels;
     int length;
-} blink_sound_data;
+} blink_sound;
 
 typedef struct {
     naettReq *req;
@@ -92,7 +92,7 @@ void api_color_set_index(WrenVM *vm);
 
 void api_image_allocate(WrenVM *vm);
 void api_image_finalize(void *data);
-void api_image_new_wh(WrenVM *vm);
+void api_image_new(WrenVM *vm);
 void api_image_new_filename(WrenVM *vm);
 void api_image_new_from_memory(WrenVM *vm);
 void api_image_clip(WrenVM *vm);
@@ -129,7 +129,7 @@ void api_font_measure(WrenVM *vm);
 void api_source_allocate(WrenVM *vm);
 void api_source_finalize(void *data);
 void api_source_new(WrenVM *vm);
-void api_source_new_from_memory(WrenVM *vm);
+void api_source_new_from_sound(WrenVM *vm);
 void api_source_play(WrenVM *vm);
 void api_source_pause(WrenVM *vm);
 void api_source_stop(WrenVM *vm);
@@ -141,15 +141,19 @@ void api_source_set_pan(WrenVM *vm);
 void api_source_set_pitch(WrenVM *vm);
 void api_source_set_loop(WrenVM *vm);
 
-void api_sound_data_allocate(WrenVM *vm);
-void api_sound_data_finalize(void *data);
-void api_sound_data_new(WrenVM *vm);
-void api_sound_data_get_sample(WrenVM *vm);
-void api_sound_data_set_sample(WrenVM *vm);
-void api_sound_data_get_bit_depth(WrenVM *vm);
-void api_sound_data_get_sample_rate(WrenVM *vm);
-void api_sound_data_get_channels(WrenVM *vm);
-void api_sound_data_get_length(WrenVM *vm);
+void api_sound_allocate(WrenVM *vm);
+void api_sound_finalize(void *data);
+void api_sound_new(WrenVM *vm);
+void api_sound_new_filename(WrenVM *vm);
+void api_sound_new_from_memory(WrenVM *vm);
+void api_sound_get_sample(WrenVM *vm);
+void api_sound_set_sample(WrenVM *vm);
+void api_sound_save(WrenVM *vm);
+void api_sound_save_to_memory(WrenVM *vm);
+void api_sound_get_bit_depth(WrenVM *vm);
+void api_sound_get_sample_rate(WrenVM *vm);
+void api_sound_get_channels(WrenVM *vm);
+void api_sound_get_length(WrenVM *vm);
 
 //--------------------
 // Input

@@ -145,7 +145,7 @@ foreign class Font {
 
 foreign class Source {
     foreign construct new(filename)
-    foreign construct fromMemory(data)
+    foreign construct fromSound(sound)
 
     foreign play()
     foreign pause()
@@ -160,11 +160,15 @@ foreign class Source {
     foreign loop=(v)
 }
 
-foreign class SoundData {
+foreign class Sound {
     foreign construct new(samples, sampleRate, bitDepth, channels)
+    foreign construct new(filename)
+    foreign construct fromMemory(data)
 
     foreign getSample(index)
     foreign setSample(index, sample)
+    foreign save(filename)
+    foreign saveToMemory()
 
     getSample(index, channel) {
         getSample(index * channels + (channel - 1))
