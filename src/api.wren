@@ -106,7 +106,7 @@ foreign class Image {
     foreign print(font, text, x, y, color)
     foreign resize(w, h)
     foreign save(type, filename)
-    foreign saveToMemory(type)
+    foreign saveToMemory()
 
     clip() {
         clip(0, 0, -1, -1)

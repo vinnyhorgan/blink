@@ -34,15 +34,14 @@ typedef struct {
 
 enum {
     BG_IMAGE_PNG,
-    BG_IMAGE_JPG,
-    BG_IMAGE_QOI
+    BG_IMAGE_JPG
 };
 
 bg_image *bg_new_image(int w, int h);
 bg_image *bg_load_image_mem(void *data, int size);
 bg_image *bg_load_image_file(const char *filename);
 void bg_destroy_image(bg_image *image);
-void *bg_save_image_mem(bg_image *image, int type, int *size);
+void *bg_save_image_mem(bg_image *image, int *size);
 bool bg_save_image(bg_image *image, int type, const char *filename);
 bg_image *bg_resize_image(bg_image *image, int w, int h);
 

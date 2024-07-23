@@ -630,28 +630,15 @@ void api_image_save(WrenVM *vm) {
         wrenSetSlotBool(vm, 0, bg_save_image(*image, BG_IMAGE_PNG, filename));
     } else if (!strcmp(type, "jpg")) {
         wrenSetSlotBool(vm, 0, bg_save_image(*image, BG_IMAGE_JPG, filename));
-    } else if (!strcmp(type, "qoi")) {
-        wrenSetSlotBool(vm, 0, bg_save_image(*image, BG_IMAGE_QOI, filename));
     } else {
-        ABORT_VM(vm, "Invalid image type (png, jpg or qoi expected)");
+        ABORT_VM(vm, "Invalid image type (png or jpg expected)");
     }
 }
 
 void api_image_save_to_memory(WrenVM *vm) {
     bg_image **image = (bg_image**)wrenGetSlotForeign(vm, 0);
-    ASSERT_TYPE(vm, 1, STRING, "type");
-    const char *type = wrenGetSlotString(vm, 1);
-
     int size;
-    void *data = NULL;
-    if (!strcmp(type, "png")) {
-        data = bg_save_image_mem(*image, BG_IMAGE_PNG, &size);
-    } else if (!strcmp(type, "qoi")) {
-        data = bg_save_image_mem(*image, BG_IMAGE_QOI, &size);
-    } else {
-        ABORT_VM(vm, "Invalid image type (png or qoi expected)");
-        return;
-    }
+    void *data = bg_save_image_mem(*image, &size);
 
     if (data) {
         wrenSetSlotBytes(vm, 0, data, size);

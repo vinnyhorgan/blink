@@ -107,7 +107,7 @@ static const char *api_source =
 "    foreign print(font, text, x, y, color)\n"
 "    foreign resize(w, h)\n"
 "    foreign save(type, filename)\n"
-"    foreign saveToMemory(type)\n"
+"    foreign saveToMemory()\n"
 "\n"
 "    clip() {\n"
 "        clip(0, 0, -1, -1)\n"

@@ -14,9 +14,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "lib/stb_image_write.h"
 
-#define QOI_IMPLEMENTATION
-#include "lib/qoi.h"
-
 #include "cri.h"
 
 #define EXPAND(X) ((X) + ((X) > 0))
@@ -56,18 +53,9 @@ bg_image *bg_new_image(int w, int h) {
 
 bg_image *bg_load_image_mem(void *data, int size) {
     int w, h;
-    uint8_t *image_data = NULL;
-
-    image_data = stbi_load_from_memory(data, size, &w, &h, NULL, 4);
-    if (!image_data) {
-        qoi_desc desc;
-        image_data = qoi_decode(data, size, &desc, 4);
-        if (!image_data)
-            return NULL;
-
-        w = desc.width;
-        h = desc.height;
-    }
+    uint8_t *image_data = stbi_load_from_memory(data, size, &w, &h, NULL, 4);
+    if (!image_data)
+        return NULL;
 
     bg_image *image = bg_new_image(w, h);
     memcpy(image->pixels, image_data, w * h * 4);
@@ -97,7 +85,7 @@ void bg_destroy_image(bg_image *image) {
     free(image);
 }
 
-void *bg_save_image_mem(bg_image *image, int type, int *size) {
+void *bg_save_image_mem(bg_image *image, int *size) {
     bg_color *image_data = (bg_color*)calloc(image->w * image->h, sizeof(bg_color));
     memcpy(image_data, image->pixels, image->w * image->h * 4);
 
@@ -108,23 +96,7 @@ void *bg_save_image_mem(bg_image *image, int type, int *size) {
         p->b = t;
     }
 
-    void *data = NULL;
-
-    switch (type)
-    {
-    case BG_IMAGE_PNG:
-        data = stbi_write_png_to_mem((const unsigned char*)image_data, image->w * 4, image->w, image->h, 4, size);
-        break;
-    case BG_IMAGE_QOI:
-        data = qoi_encode(image_data, &(qoi_desc){
-            .width = image->w,
-            .height = image->h,
-            .channels = 4,
-            .colorspace = QOI_SRGB
-        }, size);
-        break;
-    }
-
+    void *data = data = stbi_write_png_to_mem((const unsigned char*)image_data, image->w * 4, image->w, image->h, 4, size);
     free(image_data);
 
     return data;
@@ -150,14 +122,6 @@ bool bg_save_image(bg_image *image, int type, const char *filename) {
         break;
     case BG_IMAGE_JPG:
         saved = stbi_write_jpg(filename, image->w, image->h, 4, image_data, 90);
-        break;
-    case BG_IMAGE_QOI:
-        saved = qoi_write(filename, image_data, &(qoi_desc){
-            .width = image->w,
-            .height = image->h,
-            .channels = 4,
-            .colorspace = QOI_SRGB
-        });
         break;
     }
 

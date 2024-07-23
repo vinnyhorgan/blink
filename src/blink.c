@@ -137,7 +137,7 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         BIND_METHOD("print(_,_,_,_,_)", api_image_print_font);
         BIND_METHOD("resize(_,_)", api_image_resize);
         BIND_METHOD("save(_,_)", api_image_save);
-        BIND_METHOD("saveToMemory(_)", api_image_save_to_memory);
+        BIND_METHOD("saveToMemory()", api_image_save_to_memory);
         BIND_METHOD("width", api_image_get_width);
         BIND_METHOD("height", api_image_get_height);
     } else if (!strcmp(class_name, "Font")) {
