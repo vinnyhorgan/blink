@@ -105,7 +105,7 @@ foreign class Image {
     foreign print(text, x, y, color)
     foreign print(font, text, x, y, color)
     foreign resize(w, h)
-    foreign save(filename)
+    foreign save(type, filename)
     foreign saveToMemory(type)
 
     clip() {
@@ -158,6 +158,26 @@ foreign class Source {
     foreign pan=(v)
     foreign pitch=(v)
     foreign loop=(v)
+}
+
+foreign class SoundData {
+    foreign construct new(samples, sampleRate, bitDepth, channels)
+
+    foreign getSample(index)
+    foreign setSample(index, sample)
+
+    getSample(index, channel) {
+        getSample(index * channels + (channel - 1))
+    }
+
+    setSample(index, channel, sample) {
+        setSample(index * channels + (channel - 1), sample)
+    }
+
+    foreign bitDepth
+    foreign sampleRate
+    foreign channels
+    foreign length
 }
 
 //--------------------

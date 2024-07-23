@@ -10,6 +10,8 @@
 
 #define BLINK_VERSION "0.1.0"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 typedef struct {
     bool error;
     char error_message[1024];
@@ -43,6 +45,14 @@ typedef struct {
     WrenHandle *on_mouse_scroll;
     WrenHandle *on_drop;
 } blink_state;
+
+typedef struct {
+    void *data;
+    int bitdepth;
+    int samplerate;
+    int channels;
+    int length;
+} blink_sound_data;
 
 typedef struct {
     naettReq *req;
@@ -130,6 +140,16 @@ void api_source_set_gain(WrenVM *vm);
 void api_source_set_pan(WrenVM *vm);
 void api_source_set_pitch(WrenVM *vm);
 void api_source_set_loop(WrenVM *vm);
+
+void api_sound_data_allocate(WrenVM *vm);
+void api_sound_data_finalize(void *data);
+void api_sound_data_new(WrenVM *vm);
+void api_sound_data_get_sample(WrenVM *vm);
+void api_sound_data_set_sample(WrenVM *vm);
+void api_sound_data_get_bit_depth(WrenVM *vm);
+void api_sound_data_get_sample_rate(WrenVM *vm);
+void api_sound_data_get_channels(WrenVM *vm);
+void api_sound_data_get_length(WrenVM *vm);
 
 //--------------------
 // Input

@@ -15,12 +15,6 @@
 #include "blink_audio.h"
 #include "api.wren.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
-#define BIND_METHOD(s, m)      \
-    if (!strcmp(signature, s)) \
-        return m;
-
 //--------------------
 // Wren Configuration
 //--------------------
@@ -91,6 +85,10 @@ static WrenLoadModuleResult wren_load_module(WrenVM *vm, const char *name) {
     return result;
 }
 
+#define BIND_METHOD(s, m)      \
+    if (!strcmp(signature, s)) \
+        return m;
+
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *module, const char *class_name, bool is_static, const char *signature) {
     if (!strcmp(class_name, "Graphics")) {
         BIND_METHOD("clip(_,_,_,_)", api_graphics_clip);
@@ -138,7 +136,7 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         BIND_METHOD("print(_,_,_,_)", api_image_print);
         BIND_METHOD("print(_,_,_,_,_)", api_image_print_font);
         BIND_METHOD("resize(_,_)", api_image_resize);
-        BIND_METHOD("save(_)", api_image_save);
+        BIND_METHOD("save(_,_)", api_image_save);
         BIND_METHOD("saveToMemory(_)", api_image_save_to_memory);
         BIND_METHOD("width", api_image_get_width);
         BIND_METHOD("height", api_image_get_height);
@@ -159,6 +157,14 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM *vm, const char *modu
         BIND_METHOD("pan=(_)", api_source_set_pan);
         BIND_METHOD("pitch=(_)", api_source_set_pitch);
         BIND_METHOD("loop=(_)", api_source_set_loop);
+    } else if (!strcmp(class_name, "SoundData")) {
+        BIND_METHOD("init new(_,_,_,_)", api_sound_data_new);
+        BIND_METHOD("getSample(_)", api_sound_data_get_sample);
+        BIND_METHOD("setSample(_,_)", api_sound_data_set_sample);
+        BIND_METHOD("bitDepth", api_sound_data_get_bit_depth);
+        BIND_METHOD("sampleRate", api_sound_data_get_sample_rate);
+        BIND_METHOD("channels", api_sound_data_get_channels);
+        BIND_METHOD("length", api_sound_data_get_length);
     } else if (!strcmp(class_name, "Keyboard")) {
         BIND_METHOD("down(_)", api_keyboard_down);
         BIND_METHOD("pressed(_)", api_keyboard_pressed);
@@ -214,6 +220,9 @@ static WrenForeignClassMethods wren_bind_foreign_class(WrenVM *vm, const char *m
     } else if (!strcmp(class_name, "Source")) {
         methods.allocate = api_source_allocate;
         methods.finalize = api_source_finalize;
+    } else if (!strcmp(class_name, "SoundData")) {
+        methods.allocate = api_sound_data_allocate;
+        methods.finalize = api_sound_data_finalize;
     } else if (!strcmp(class_name, "Request")) {
         methods.allocate = api_request_allocate;
         methods.finalize = api_request_finalize;

@@ -4,15 +4,15 @@
 
 #include <string.h>
 
-#define ABORT_VM(vm, error) do {   \
+#define ABORT_VM(vm, error) do {         \
         wrenSetSlotString(vm, 0, error); \
         wrenAbortFiber(vm, 0);           \
     } while (false);
 
 #define ASSERT_TYPE(vm, slot, type, field_name)                        \
-    if (wrenGetSlotType(vm, slot) != WREN_TYPE_##type) {                     \
+    if (wrenGetSlotType(vm, slot) != WREN_TYPE_##type) {               \
         ABORT_VM(vm, "Expected " #field_name " to be of type " #type); \
-        return;                                                              \
+        return;                                                        \
     }
 
 //--------------------
@@ -728,17 +728,104 @@ void api_source_finalize(void *data) {
     ba_destroy_source(*source);
 }
 
-void api_source_new(WrenVM *vm) {
-    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
-    ASSERT_TYPE(vm, 1, STRING, "filename");
-    const char *filename = wrenGetSlotString(vm, 1);
-    ba_source *loaded_source = ba_load_source_file(filename);
-    if (!loaded_source) {
-        ABORT_VM(vm, "Failed to load source");
-        return;
+typedef struct {
+    blink_sound_data sound_data;
+    int idx;
+} sound_data_stream;
+
+#define SOUND_DATA_PROCESS_LOOP(X) \
+    while (n--) {           \
+        X                   \
+        dst += 2;           \
+        s->idx++;           \
     }
 
-    *source = loaded_source;
+static void sound_data_stream_handler(ba_event *e) {
+    sound_data_stream *s = e->user_data;
+
+    switch (e->type)
+    {
+    case BA_EVENT_DESTROY:
+        free(s);
+        break;
+
+    case BA_EVENT_SAMPLES:
+        int16_t *dst = e->buffer;
+        int len = e->length / 2;
+fill:
+        int n = MIN(len, s->sound_data.length - s->idx);
+        len -= n;
+
+        if (s->sound_data.bitdepth == 16 && s->sound_data.channels == 1) {
+            SOUND_DATA_PROCESS_LOOP({
+                dst[0] = dst[1] = ((int16_t*)s->sound_data.data)[s->idx];
+            });
+        } else if (s->sound_data.bitdepth == 16 && s->sound_data.channels == 2) {
+            SOUND_DATA_PROCESS_LOOP({
+                int x = s->idx * 2;
+                dst[0] = ((int16_t*)s->sound_data.data)[x];
+                dst[1] = ((int16_t*)s->sound_data.data)[x + 1];
+            });
+        } else if (s->sound_data.bitdepth == 8 && s->sound_data.channels == 1) {
+            SOUND_DATA_PROCESS_LOOP({
+                dst[0] = dst[1] = (((uint8_t*)s->sound_data.data)[s->idx] - 128) << 8;
+            });
+        } else if (s->sound_data.bitdepth == 8 && s->sound_data.channels == 2) {
+            SOUND_DATA_PROCESS_LOOP({
+                int x = s->idx * 2;
+                dst[0] = (((uint8_t*)s->sound_data.data)[x] - 128) << 8;
+                dst[1] = (((uint8_t*)s->sound_data.data)[x + 1] - 128) << 8;
+            });
+        }
+
+        if (len > 0) {
+            s->idx = 0;
+            goto fill;
+        }
+        break;
+
+    case BA_EVENT_REWIND:
+        s->idx = 0;
+        break;
+    }
+}
+
+void api_source_new(WrenVM *vm) {
+    ba_source **source = (ba_source**)wrenGetSlotForeign(vm, 0);
+
+    if (wrenGetSlotType(vm, 1) == WREN_TYPE_STRING) {
+        const char *filename = wrenGetSlotString(vm, 1);
+        ba_source *loaded_source = ba_load_source_file(filename);
+        if (!loaded_source) {
+            ABORT_VM(vm, "Failed to load source");
+            return;
+        }
+
+        *source = loaded_source;
+    } else if (wrenGetSlotType(vm, 1) == WREN_TYPE_FOREIGN) {
+        blink_sound_data *sound_data = (blink_sound_data*)wrenGetSlotForeign(vm, 1);
+
+        ba_source_info info;
+
+        sound_data_stream *stream = calloc(1, sizeof(sound_data_stream));
+        if (!stream) {
+            ABORT_VM(vm, "Failed to allocate stream");
+            return;
+        }
+
+        stream->sound_data = *sound_data;
+        stream->idx = 0;
+
+        info.user_data = stream;
+        info.handler = sound_data_stream_handler;
+        info.samplerate = sound_data->samplerate;
+        info.length = sound_data->length;
+
+        *source = ba_new_source(&info);
+    } else {
+        ABORT_VM(vm, "Expected argument to be of type string or SoundData");
+        return;
+    }
 }
 
 void api_source_new_from_memory(WrenVM *vm) {
@@ -823,6 +910,114 @@ void api_source_set_loop(WrenVM *vm) {
     ASSERT_TYPE(vm, 1, BOOL, "loop");
     bool loop = wrenGetSlotBool(vm, 1);
     ba_set_loop(*source, loop);
+}
+
+void api_sound_data_allocate(WrenVM *vm) {
+    wrenEnsureSlots(vm, 1);
+    wrenSetSlotNewForeign(vm, 0, 0, sizeof(blink_sound_data));
+}
+
+void api_sound_data_finalize(void *data) {
+    blink_sound_data *sound_data = (blink_sound_data*)data;
+    free(sound_data->data);
+}
+
+void api_sound_data_new(WrenVM *vm) {
+    blink_sound_data *sound_data = (blink_sound_data*)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, NUM, "samples");
+    ASSERT_TYPE(vm, 2, NUM, "sampleRate");
+    ASSERT_TYPE(vm, 3, NUM, "bitDepth");
+    ASSERT_TYPE(vm, 4, NUM, "channels");
+
+    int samples = (int)wrenGetSlotDouble(vm, 1);
+    int sample_rate = (int)wrenGetSlotDouble(vm, 2);
+    int bit_depth = (int)wrenGetSlotDouble(vm, 3);
+    int channels = (int)wrenGetSlotDouble(vm, 4);
+
+    if (samples <= 0 || sample_rate <= 0 || channels <= 0) {
+        ABORT_VM(vm, "Invalid sample data");
+        return;
+    }
+
+    if (bit_depth != 8 && bit_depth != 16) {
+        ABORT_VM(vm, "Invalid bit depth");
+        return;
+    }
+
+    sound_data->data = malloc(samples * (bit_depth / 8) * channels);
+    if (!sound_data->data) {
+        ABORT_VM(vm, "Failed to allocate sound data");
+        return;
+    }
+
+    sound_data->bitdepth = bit_depth;
+    sound_data->samplerate = sample_rate;
+    sound_data->channels = channels;
+    sound_data->length = samples;
+}
+
+void api_sound_data_get_sample(WrenVM *vm) {
+    blink_sound_data *sound_data = (blink_sound_data*)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, NUM, "index");
+    int index = (int)wrenGetSlotDouble(vm, 1);
+
+    if (index < 0 || index >= sound_data->length * sound_data->channels) {
+        ABORT_VM(vm, "Invalid sample index");
+        return;
+    }
+
+    float value;
+
+    if (sound_data->bitdepth == 8) {
+        uint8_t *data = (uint8_t*)sound_data->data;
+        value = (data[index] - 128) / 128.0f;
+    } else if (sound_data->bitdepth == 16) {
+        int16_t *data = (int16_t*)sound_data->data;
+        value = data[index] / 32767.0f;
+    }
+
+    wrenSetSlotDouble(vm, 0, value);
+}
+
+void api_sound_data_set_sample(WrenVM *vm) {
+    blink_sound_data *sound_data = (blink_sound_data*)wrenGetSlotForeign(vm, 0);
+    ASSERT_TYPE(vm, 1, NUM, "index");
+    ASSERT_TYPE(vm, 2, NUM, "value");
+    int index = (int)wrenGetSlotDouble(vm, 1);
+    float value = (float)wrenGetSlotDouble(vm, 2);
+
+    if (index < 0 || index >= sound_data->length * sound_data->channels) {
+        ABORT_VM(vm, "Invalid sample index");
+        return;
+    }
+
+    if (sound_data->bitdepth == 8) {
+        uint8_t *data = (uint8_t*)sound_data->data;
+        data[index] = (uint8_t)(value * 128 + 128);
+    } else if (sound_data->bitdepth == 16) {
+        int16_t *data = (int16_t*)sound_data->data;
+        data[index] = (int16_t)(value * 32767);
+    }
+}
+
+void api_sound_data_get_bit_depth(WrenVM *vm) {
+    blink_sound_data *sound_data = (blink_sound_data*)wrenGetSlotForeign(vm, 0);
+    wrenSetSlotDouble(vm, 0, sound_data->bitdepth);
+}
+
+void api_sound_data_get_sample_rate(WrenVM *vm) {
+    blink_sound_data *sound_data = (blink_sound_data*)wrenGetSlotForeign(vm, 0);
+    wrenSetSlotDouble(vm, 0, sound_data->samplerate);
+}
+
+void api_sound_data_get_channels(WrenVM *vm) {
+    blink_sound_data *sound_data = (blink_sound_data*)wrenGetSlotForeign(vm, 0);
+    wrenSetSlotDouble(vm, 0, sound_data->channels);
+}
+
+void api_sound_data_get_length(WrenVM *vm) {
+    blink_sound_data *sound_data = (blink_sound_data*)wrenGetSlotForeign(vm, 0);
+    wrenSetSlotDouble(vm, 0, sound_data->length);
 }
 
 //--------------------
