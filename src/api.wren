@@ -257,6 +257,7 @@ class BaseGame {
     draw() {}
     active(active) {}
     resize(width, height) {}
+    close() {}
     keyboard(key, pressed) {}
     input(char) {}
     mouseButton(button, pressed) {}

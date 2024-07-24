@@ -38,6 +38,7 @@ typedef struct {
     WrenHandle *on_draw;
     WrenHandle *on_active;
     WrenHandle *on_resize;
+    WrenHandle *on_close;
     WrenHandle *on_keyboard;
     WrenHandle *on_char_input;
     WrenHandle *on_mouse_button;

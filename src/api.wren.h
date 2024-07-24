@@ -258,6 +258,7 @@ static const char *api_source =
 "    draw() {}\n"
 "    active(active) {}\n"
 "    resize(width, height) {}\n"
+"    close() {}\n"
 "    keyboard(key, pressed) {}\n"
 "    input(char) {}\n"
 "    mouseButton(button, pressed) {}\n"

@@ -746,6 +746,7 @@ static void sound_stream_handler(ba_event *e) {
     switch (e->type)
     {
     case BA_EVENT_DESTROY:
+        free(s->sound.data);
         free(s);
         break;
 
@@ -803,7 +804,20 @@ void api_source_new_from_sound(WrenVM *vm) {
         return;
     }
 
-    stream->sound = *sound;
+    blink_sound copy;
+    copy.data = malloc(sound->length * (sound->bitdepth / 8) * sound->channels);
+    if (!copy.data) {
+        ABORT_VM(vm, "Failed to allocate sound data");
+        return;
+    }
+
+    memcpy(copy.data, sound->data, sound->length * (sound->bitdepth / 8) * sound->channels);
+    copy.bitdepth = sound->bitdepth;
+    copy.samplerate = sound->samplerate;
+    copy.channels = sound->channels;
+    copy.length = sound->length;
+
+    stream->sound = copy;
     stream->idx = 0;
 
     info.user_data = stream;
@@ -1102,8 +1116,7 @@ void api_sound_save(WrenVM *vm) {
         return;
     }
 
-    // wrenSetSlotBool(vm, 0, cri_write_file(filename, data, size));
-    cri_write_file(filename, data, size);
+    wrenSetSlotBool(vm, 0, cri_write_file(filename, data, size));
     free(data);
 }
 
@@ -1336,7 +1349,7 @@ void api_file_write(WrenVM *vm) {
     const char *path = wrenGetSlotString(vm, 1);
     int size;
     const char *data = wrenGetSlotBytes(vm, 2, &size);
-    cri_write_file(path, data, size);
+    wrenSetSlotBool(vm, 0, cri_write_file(path, data, size));
 }
 
 void api_request_allocate(WrenVM *vm) {

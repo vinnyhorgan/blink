@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <direct.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -313,6 +312,18 @@ static void on_resize(cri_window *window, int width, int height) {
         wrenSetSlotDouble(state->vm, 2, height);
         wrenCall(state->vm, state->on_resize);
     }
+}
+
+static bool on_close(cri_window *window) {
+    blink_state *state = (blink_state*)cri_get_user_data(window);
+
+    if (!state->error) {
+        wrenSetSlotHandle(state->vm, 0, state->game);
+        wrenCall(state->vm, state->on_close);
+        return wrenGetSlotBool(state->vm, 0);
+    }
+
+    return true;
 }
 
 static void on_keyboard(cri_window *window, cri_key key, cri_mod_key mod, bool is_pressed) {
@@ -705,7 +716,7 @@ int main(int argc, char **argv) {
 
     int flags = 0;
 
-    chdir(argv[1]);
+    cri_chdir(argv[1]);
     char *source = cri_read_file("main.wren", NULL);
     if (!source) {
         state.error = true;
@@ -739,6 +750,7 @@ int main(int argc, char **argv) {
     state.on_draw = wrenMakeCallHandle(vm, "draw()");
     state.on_active = wrenMakeCallHandle(vm, "active(_)");
     state.on_resize = wrenMakeCallHandle(vm, "resize(_,_)");
+    state.on_close = wrenMakeCallHandle(vm, "close()");
     state.on_keyboard = wrenMakeCallHandle(vm, "keyboard(_,_)");
     state.on_char_input = wrenMakeCallHandle(vm, "input(_)");
     state.on_mouse_button = wrenMakeCallHandle(vm, "mouseButton(_,_)");
@@ -870,6 +882,7 @@ error:
 
     cri_set_active_cb(state.window, on_active);
     cri_set_resize_cb(state.window, on_resize);
+    cri_set_close_cb(state.window, on_close);
     cri_set_keyboard_cb(state.window, on_keyboard);
     cri_set_char_input_cb(state.window, on_char_input);
     cri_set_mouse_button_cb(state.window, on_mouse_button);
@@ -935,6 +948,8 @@ error:
         wrenReleaseHandle(vm, state.on_active);
     if (state.on_resize)
         wrenReleaseHandle(vm, state.on_resize);
+    if (state.on_close)
+        wrenReleaseHandle(vm, state.on_close);
     if (state.on_keyboard)
         wrenReleaseHandle(vm, state.on_keyboard);
     if (state.on_char_input)
