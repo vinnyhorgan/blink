@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
 
     exe.addCSourceFiles(.{
         .files = &[_][]const u8{
-            // linux specific right now
+            // common
             "vendor/glfw/src/context.c",
             "vendor/glfw/src/init.c",
             "vendor/glfw/src/input.c",
@@ -33,19 +33,32 @@ pub fn build(b: *std.Build) void {
             "vendor/glfw/src/null_monitor.c",
             "vendor/glfw/src/null_window.c",
             "vendor/glfw/src/null_joystick.c",
-            "vendor/glfw/src/posix_module.c",
-            "vendor/glfw/src/posix_time.c",
-            "vendor/glfw/src/posix_thread.c",
-            "vendor/glfw/src/linux_joystick.c",
-            "vendor/glfw/src/posix_poll.c",
 
-            // wayland stuff
-            "vendor/glfw/src/wl_init.c",
-            "vendor/glfw/src/wl_monitor.c",
-            "vendor/glfw/src/wl_window.c",
+            "vendor/glfw/src/win32_module.c",
+            "vendor/glfw/src/win32_time.c",
+            "vendor/glfw/src/win32_thread.c",
+
+            "vendor/glfw/src/win32_init.c",
+            "vendor/glfw/src/win32_joystick.c",
+            "vendor/glfw/src/win32_monitor.c",
+            "vendor/glfw/src/win32_window.c",
+            "vendor/glfw/src/wgl_context.c",
+
+            // linux specific right now
+            //"vendor/glfw/src/posix_module.c",
+            //"vendor/glfw/src/posix_time.c",
+            //"vendor/glfw/src/posix_thread.c",
+            //"vendor/glfw/src/linux_joystick.c",
+            //"vendor/glfw/src/posix_poll.c",
+
+            //"vendor/glfw/src/wl_init.c",
+            //"vendor/glfw/src/wl_monitor.c",
+            //"vendor/glfw/src/wl_window.c",
         },
         .flags = &[_][]const u8{
-            "-D_GLFW_WAYLAND",
+            "-D_GLFW_WIN32",
+
+            //"-D_GLFW_WAYLAND",
         },
     });
 
@@ -70,7 +83,10 @@ pub fn build(b: *std.Build) void {
     exe.addIncludePath(b.path("vendor/imgui"));
     exe.addIncludePath(b.path("vendor/imgui/backends"));
 
-    exe.linkSystemLibrary("GL");
+    exe.linkSystemLibrary("gdi32");
+    exe.linkSystemLibrary("opengl32");
+
+    //exe.linkSystemLibrary("GL");
 
     b.installArtifact(exe);
 

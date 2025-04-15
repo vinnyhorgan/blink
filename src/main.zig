@@ -13,6 +13,29 @@ fn errorCallback(errn: c_int, str: [*c]const u8) callconv(.C) void {
     std.log.err("glfw error '{}'': {s}", .{ errn, str });
 }
 
+fn draw(window: ?*c.GLFWwindow) void {
+    c.cImGui_ImplOpenGL3_NewFrame();
+    c.cImGui_ImplGlfw_NewFrame();
+    c.ImGui_NewFrame();
+
+    _ = c.ImGui_DockSpaceOverViewport();
+
+    c.ImGui_ShowDemoWindow(null);
+
+    c.ImGui_Render();
+
+    c.glClear(c.GL_COLOR_BUFFER_BIT);
+
+    c.cImGui_ImplOpenGL3_RenderDrawData(c.ImGui_GetDrawData());
+
+    c.glfwSwapBuffers(window);
+}
+
+fn framebufferSizeCallback(window: ?*c.GLFWwindow, width: c_int, height: c_int) callconv(.C) void {
+    c.glViewport(0, 0, width, height);
+    draw(window);
+}
+
 fn color(r: f32, g: f32, b: f32, a: f32) c.ImVec4 {
     var v = c.ImVec4{};
     v.x = r;
@@ -41,6 +64,8 @@ pub fn main() !void {
 
     c.glfwMakeContextCurrent(window);
     c.glfwSwapInterval(1);
+
+    _ = c.glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     _ = c.ImGui_CreateContext(null);
     defer c.ImGui_DestroyContext(null);
@@ -119,26 +144,8 @@ pub fn main() !void {
     defer c.cImGui_ImplOpenGL3_Shutdown();
 
     while (c.glfwWindowShouldClose(window) != c.GLFW_TRUE) {
-        c.cImGui_ImplOpenGL3_NewFrame();
-        c.cImGui_ImplGlfw_NewFrame();
-        c.ImGui_NewFrame();
+        draw(window);
 
-        _ = c.ImGui_DockSpaceOverViewport();
-
-        c.ImGui_ShowDemoWindow(null);
-
-        c.ImGui_Render();
-
-        var width: c_int = 0;
-        var height: c_int = 0;
-        c.glfwGetFramebufferSize(window, &width, &height);
-
-        c.glViewport(0, 0, width, height);
-        c.glClear(c.GL_COLOR_BUFFER_BIT);
-
-        c.cImGui_ImplOpenGL3_RenderDrawData(c.ImGui_GetDrawData());
-
-        c.glfwSwapBuffers(window);
         c.glfwPollEvents();
     }
 }
