@@ -1,4 +1,5 @@
 const std = @import("std");
+const font = @embedFile("jetbrainsmono.ttf");
 
 const c = @cImport({
     @cInclude("dcimgui.h");
@@ -34,6 +35,18 @@ pub fn main() !void {
     _ = c.ImGui_CreateContext(null);
     defer c.ImGui_DestroyContext(null);
 
+    const io = c.ImGui_GetIO();
+    io.*.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
+
+    _ = c.ImFontAtlas_AddFontFromMemoryTTF(
+        io.*.Fonts,
+        @constCast(font),
+        font.len,
+        20.0,
+        null,
+        null,
+    );
+
     _ = c.cImGui_ImplGlfw_InitForOpenGL(window, true);
     defer c.cImGui_ImplGlfw_Shutdown();
 
@@ -44,6 +57,8 @@ pub fn main() !void {
         c.cImGui_ImplOpenGL3_NewFrame();
         c.cImGui_ImplGlfw_NewFrame();
         c.ImGui_NewFrame();
+
+        _ = c.ImGui_DockSpaceOverViewport();
 
         c.ImGui_ShowDemoWindow(null);
 
