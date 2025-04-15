@@ -24,7 +24,7 @@ pub fn main() !void {
     c.glfwWindowHint(c.GLFW_CONTEXT_VERSION_MAJOR, 3);
     c.glfwWindowHint(c.GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    const window = c.glfwCreateWindow(640, 480, "blink", null, null);
+    const window = c.glfwCreateWindow(960, 540, "blink", null, null);
     if (window == null) {
         return;
     }
@@ -44,13 +44,15 @@ pub fn main() !void {
         .GlyphMaxAdvanceX = c.FLT_MAX,
         .RasterizerMultiply = 1.0,
         .RasterizerDensity = 1.0,
+        .OversampleH = 2,
+        .OversampleV = 2,
     };
 
     _ = c.ImFontAtlas_AddFontFromMemoryTTF(
         io.*.Fonts,
         @constCast(font),
         font.len,
-        20.0,
+        18.0,
         &font_cfg,
         null,
     );

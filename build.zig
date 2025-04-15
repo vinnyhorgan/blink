@@ -19,6 +19,7 @@ pub fn build(b: *std.Build) void {
 
     exe.addCSourceFiles(.{
         .files = &[_][]const u8{
+            // linux specific right now
             "vendor/glfw/src/context.c",
             "vendor/glfw/src/init.c",
             "vendor/glfw/src/input.c",
@@ -38,6 +39,7 @@ pub fn build(b: *std.Build) void {
             "vendor/glfw/src/linux_joystick.c",
             "vendor/glfw/src/posix_poll.c",
 
+            // wayland stuff
             "vendor/glfw/src/wl_init.c",
             "vendor/glfw/src/wl_monitor.c",
             "vendor/glfw/src/wl_window.c",
