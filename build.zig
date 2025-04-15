@@ -17,7 +17,37 @@ pub fn build(b: *std.Build) void {
         .root_module = exe_mod,
     });
 
-    b.installArtifact(exe);
+    exe.addCSourceFiles(.{
+        .files = &[_][]const u8{
+            "vendor/glfw/src/context.c",
+            "vendor/glfw/src/init.c",
+            "vendor/glfw/src/input.c",
+            "vendor/glfw/src/monitor.c",
+            "vendor/glfw/src/platform.c",
+            "vendor/glfw/src/vulkan.c",
+            "vendor/glfw/src/window.c",
+            "vendor/glfw/src/egl_context.c",
+            "vendor/glfw/src/osmesa_context.c",
+            "vendor/glfw/src/null_init.c",
+            "vendor/glfw/src/null_monitor.c",
+            "vendor/glfw/src/null_window.c",
+            "vendor/glfw/src/null_joystick.c",
+            "vendor/glfw/src/posix_module.c",
+            "vendor/glfw/src/posix_time.c",
+            "vendor/glfw/src/posix_thread.c",
+            "vendor/glfw/src/linux_joystick.c",
+            "vendor/glfw/src/posix_poll.c",
+
+            "vendor/glfw/src/x11_init.c",
+            "vendor/glfw/src/x11_monitor.c",
+            "vendor/glfw/src/x11_window.c",
+            "vendor/glfw/src/xkb_unicode.c",
+            "vendor/glfw/src/glx_context.c",
+        },
+        .flags = &[_][]const u8{
+            "-D_GLFW_X11",
+        },
+    });
 
     exe.addCSourceFiles(.{
         .files = &[_][]const u8{
@@ -35,10 +65,13 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    exe.addIncludePath(b.path("vendor/glfw/include"));
     exe.addIncludePath(b.path("vendor/imgui"));
     exe.addIncludePath(b.path("vendor/imgui/backends"));
-    exe.linkSystemLibrary("glfw");
+
     exe.linkSystemLibrary("GL");
+
+    b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
 
