@@ -6,6 +6,7 @@ const c = @cImport({
     @cInclude("dcimgui_impl_glfw.h");
     @cInclude("dcimgui_impl_opengl3.h");
     @cInclude("GLFW/glfw3.h");
+    @cInclude("float.h");
 });
 
 fn errorCallback(errn: c_int, str: [*c]const u8) callconv(.C) void {
@@ -38,12 +39,19 @@ pub fn main() !void {
     const io = c.ImGui_GetIO();
     io.*.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
 
+    var font_cfg = c.ImFontConfig{
+        .FontDataOwnedByAtlas = false,
+        .GlyphMaxAdvanceX = c.FLT_MAX,
+        .RasterizerMultiply = 1.0,
+        .RasterizerDensity = 1.0,
+    };
+
     _ = c.ImFontAtlas_AddFontFromMemoryTTF(
         io.*.Fonts,
         @constCast(font),
         font.len,
         20.0,
-        null,
+        &font_cfg,
         null,
     );
 
