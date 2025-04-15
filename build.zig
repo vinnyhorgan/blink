@@ -21,22 +21,22 @@ pub fn build(b: *std.Build) void {
 
     exe.addCSourceFiles(.{
         .files = &[_][]const u8{
-            "imgui/dcimgui_internal.cpp",
-            "imgui/dcimgui.cpp",
-            "imgui/imgui_demo.cpp",
-            "imgui/imgui_draw.cpp",
-            "imgui/imgui_tables.cpp",
-            "imgui/imgui_widgets.cpp",
-            "imgui/imgui.cpp",
-            "imgui/backends/dcimgui_impl_glfw.cpp",
-            "imgui/backends/dcimgui_impl_opengl3.cpp",
-            "imgui/backends/imgui_impl_glfw.cpp",
-            "imgui/backends/imgui_impl_opengl3.cpp",
+            "vendor/imgui/dcimgui_internal.cpp",
+            "vendor/imgui/dcimgui.cpp",
+            "vendor/imgui/imgui_demo.cpp",
+            "vendor/imgui/imgui_draw.cpp",
+            "vendor/imgui/imgui_tables.cpp",
+            "vendor/imgui/imgui_widgets.cpp",
+            "vendor/imgui/imgui.cpp",
+            "vendor/imgui/backends/dcimgui_impl_glfw.cpp",
+            "vendor/imgui/backends/dcimgui_impl_opengl3.cpp",
+            "vendor/imgui/backends/imgui_impl_glfw.cpp",
+            "vendor/imgui/backends/imgui_impl_opengl3.cpp",
         },
     });
 
-    exe.addIncludePath(b.path("imgui"));
-    exe.addIncludePath(b.path("imgui/backends"));
+    exe.addIncludePath(b.path("vendor/imgui"));
+    exe.addIncludePath(b.path("vendor/imgui/backends"));
     exe.linkSystemLibrary("glfw");
     exe.linkSystemLibrary("GL");
 
