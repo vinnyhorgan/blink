@@ -38,14 +38,12 @@ pub fn build(b: *std.Build) void {
             "vendor/glfw/src/linux_joystick.c",
             "vendor/glfw/src/posix_poll.c",
 
-            "vendor/glfw/src/x11_init.c",
-            "vendor/glfw/src/x11_monitor.c",
-            "vendor/glfw/src/x11_window.c",
-            "vendor/glfw/src/xkb_unicode.c",
-            "vendor/glfw/src/glx_context.c",
+            "vendor/glfw/src/wl_init.c",
+            "vendor/glfw/src/wl_monitor.c",
+            "vendor/glfw/src/wl_window.c",
         },
         .flags = &[_][]const u8{
-            "-D_GLFW_X11",
+            "-D_GLFW_WAYLAND",
         },
     });
 
@@ -66,6 +64,7 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.addIncludePath(b.path("vendor/glfw/include"));
+    exe.addIncludePath(b.path("vendor/glfw/wl"));
     exe.addIncludePath(b.path("vendor/imgui"));
     exe.addIncludePath(b.path("vendor/imgui/backends"));
 
