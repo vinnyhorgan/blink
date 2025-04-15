@@ -7,6 +7,12 @@ const c = @cImport({
     @cInclude("dcimgui_impl_opengl3.h");
     @cInclude("GLFW/glfw3.h");
     @cInclude("float.h");
+
+    @cDefine("GLFW_EXPOSE_NATIVE_WIN32", {});
+    @cInclude("GLFW/glfw3native.h");
+
+    // win specific
+    @cInclude("dwmapi.h");
 });
 
 fn errorCallback(errn: c_int, str: [*c]const u8) callconv(.C) void {
@@ -56,11 +62,18 @@ pub fn main() !void {
     c.glfwWindowHint(c.GLFW_CONTEXT_VERSION_MAJOR, 3);
     c.glfwWindowHint(c.GLFW_CONTEXT_VERSION_MINOR, 0);
 
+    c.glfwWindowHint(c.GLFW_VISIBLE, c.GLFW_FALSE);
+
     const window = c.glfwCreateWindow(960, 540, "blink", null, null);
     if (window == null) {
         return;
     }
     defer c.glfwDestroyWindow(window);
+
+    const hwnd = c.glfwGetWin32Window(window);
+
+    const dark: c.BOOL = c.TRUE;
+    _ = c.DwmSetWindowAttribute(hwnd, 20, &dark, 4);
 
     c.glfwMakeContextCurrent(window);
     c.glfwSwapInterval(1);
@@ -142,6 +155,8 @@ pub fn main() !void {
 
     _ = c.cImGui_ImplOpenGL3_InitEx("#version 130");
     defer c.cImGui_ImplOpenGL3_Shutdown();
+
+    c.glfwShowWindow(window);
 
     while (c.glfwWindowShouldClose(window) != c.GLFW_TRUE) {
         draw(window);

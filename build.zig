@@ -85,6 +85,7 @@ pub fn build(b: *std.Build) void {
 
     exe.linkSystemLibrary("gdi32");
     exe.linkSystemLibrary("opengl32");
+    exe.linkSystemLibrary("dwmapi");
 
     //exe.linkSystemLibrary("GL");
 
