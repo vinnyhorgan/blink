@@ -1,6 +1,8 @@
 const std = @import("std");
 const font = @embedFile("jetbrainsmono.ttf");
 
+const Vm = @import("vm.zig").Vm;
+
 const c = @cImport({
     @cInclude("dcimgui.h");
     @cInclude("dcimgui_impl_glfw.h");
@@ -156,6 +158,11 @@ pub fn main() !void {
     _ = c.cImGui_ImplOpenGL3_InitEx("#version 130");
     defer c.cImGui_ImplOpenGL3_Shutdown();
 
+    // setup vm
+    var vm = Vm{};
+    vm.init();
+
+    // init finished show window and start main loop
     c.glfwShowWindow(window);
 
     while (c.glfwWindowShouldClose(window) != c.GLFW_TRUE) {
