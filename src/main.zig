@@ -159,8 +159,11 @@ pub fn main() !void {
     defer c.cImGui_ImplOpenGL3_Shutdown();
 
     // setup vm
-    var vm = Vm{};
-    vm.init();
+    var vm = Vm.init();
+
+    vm.writeMem(0x3000, 0xFFFF);
+
+    _ = vm.runCycle();
 
     // init finished show window and start main loop
     c.glfwShowWindow(window);
