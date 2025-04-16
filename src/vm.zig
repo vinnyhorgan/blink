@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const Console = @import("console.zig").Console;
+
 const mem_size = 1 << 16;
 const pc_start = 0x3000;
 
@@ -73,13 +75,15 @@ fn signExtend(val: u16, comptime bit_count: u16) u16 {
 pub const Vm = struct {
     mem: [mem_size]u16,
     reg: [Reg.cond.val() + 1]u16,
+    console: *Console,
 
-    pub fn init() Vm {
-        std.debug.print("Initializing VM...\n", .{});
+    pub fn init(console: *Console) Vm {
+        console.log("Initializing VM...\n");
 
         var self: Vm = Vm{
             .mem = [_]u16{0} ** mem_size,
             .reg = [_]u16{0} ** (Reg.cond.val() + 1),
+            .console = console,
         };
 
         self.reg[Reg.pc.val()] = pc_start;

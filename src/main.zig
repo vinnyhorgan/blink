@@ -1,6 +1,7 @@
 const std = @import("std");
 const font = @embedFile("jetbrainsmono.ttf");
 
+const Console = @import("console.zig").Console;
 const Vm = @import("vm.zig").Vm;
 
 const c = @cImport({
@@ -17,6 +18,8 @@ const c = @cImport({
     @cInclude("dwmapi.h");
 });
 
+var global_console: Console = undefined;
+
 fn errorCallback(errn: c_int, str: [*c]const u8) callconv(.C) void {
     std.log.err("glfw error '{}'': {s}", .{ errn, str });
 }
@@ -29,6 +32,8 @@ fn draw(window: ?*c.GLFWwindow) void {
     _ = c.ImGui_DockSpaceOverViewport();
 
     c.ImGui_ShowDemoWindow(null);
+
+    global_console.render();
 
     c.ImGui_Render();
 
@@ -159,7 +164,11 @@ pub fn main() !void {
     defer c.cImGui_ImplOpenGL3_Shutdown();
 
     // setup vm
-    var vm = Vm.init();
+    const allocator = std.heap.page_allocator;
+    global_console = Console.init(allocator);
+    defer global_console.deinit();
+
+    var vm = Vm.init(&global_console);
 
     vm.writeMem(0x3000, 0xFFFF);
 
