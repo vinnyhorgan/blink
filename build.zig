@@ -89,6 +89,8 @@ pub fn build(b: *std.Build) void {
 
     //exe.linkSystemLibrary("GL");
 
+    exe.subsystem = .Windows;
+
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);

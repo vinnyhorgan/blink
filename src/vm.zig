@@ -78,7 +78,7 @@ pub const Vm = struct {
     console: *Console,
 
     pub fn init(console: *Console) Vm {
-        console.log("Initializing VM...\n");
+        console.log("Initializing VM...\n", .{});
 
         var self: Vm = Vm{
             .mem = [_]u16{0} ** mem_size,
@@ -93,7 +93,7 @@ pub const Vm = struct {
     }
 
     pub fn runCycle(self: *Vm) bool {
-        std.debug.print("Start cycle...\n", .{});
+        self.console.log("Start cycle...\n", .{});
 
         const instruction = self.readMem(self.reg[Reg.pc.val()]);
 
@@ -101,13 +101,13 @@ pub const Vm = struct {
 
         const op: Op = @enumFromInt(instruction >> 12);
 
-        std.debug.print("Executing opcode: {s}\n", .{@tagName(op)});
+        self.console.log("Executing opcode: {s}\n", .{@tagName(op)});
 
         switch (op) {
             Op.BR => self.opBR(instruction),
             Op.ADD => self.opADD(instruction),
             else => {
-                std.debug.print("unknown opcode: {s}, stopping...\n", .{@tagName(op)});
+                self.console.log("unknown opcode: {s}, stopping...\n", .{@tagName(op)});
                 return false;
             },
         }

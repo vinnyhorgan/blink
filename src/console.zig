@@ -22,9 +22,8 @@ pub const Console = struct {
         self.buffer.deinit();
     }
 
-    pub fn log(self: *Console, message: []const u8) void {
-        const copy = self.allocator.alloc(u8, message.len) catch unreachable;
-        @memcpy(copy, message);
+    pub fn log(self: *Console, comptime fmt: []const u8, args: anytype) void {
+        const copy = std.fmt.allocPrint(self.allocator, fmt, args) catch unreachable;
         self.buffer.append(copy) catch unreachable;
     }
 
