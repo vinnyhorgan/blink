@@ -44,6 +44,9 @@ pub fn build(b: *std.Build) void {
             "vendor/glfw/src/win32_window.c",
             "vendor/glfw/src/wgl_context.c",
 
+            // windows icon
+            "src/assets/res.rc",
+
             // linux specific right now
             //"vendor/glfw/src/posix_module.c",
             //"vendor/glfw/src/posix_time.c",

@@ -1,5 +1,5 @@
 const std = @import("std");
-const font = @embedFile("jetbrainsmono.ttf");
+const font = @embedFile("assets/jetbrainsmono.ttf");
 
 const Console = @import("console.zig").Console;
 const Vm = @import("vm.zig").Vm;
