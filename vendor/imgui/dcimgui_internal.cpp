@@ -3015,9 +3015,9 @@ CIMGUI_API void        cimgui::ImGui_RenderTextClippedWithDrawListEx(cimgui::ImD
     ::ImGui::RenderTextClippedEx(reinterpret_cast<::ImDrawList*>(draw_list), ConvertToCPP_ImVec2(pos_min), ConvertToCPP_ImVec2(pos_max), text, text_end, reinterpret_cast<const ::ImVec2*>(text_size_if_known), ConvertToCPP_ImVec2(align), reinterpret_cast<const ::ImRect*>(clip_rect));
 }
 
-CIMGUI_API void        cimgui::ImGui_RenderTextEllipsis(cimgui::ImDrawList* draw_list, cimgui::ImVec2 pos_min, cimgui::ImVec2 pos_max, float clip_max_x, float ellipsis_max_x, const char* text, const char* text_end, const cimgui::ImVec2* text_size_if_known)
+CIMGUI_API void        cimgui::ImGui_RenderTextEllipsis(cimgui::ImDrawList* draw_list, cimgui::ImVec2 pos_min, cimgui::ImVec2 pos_max, float ellipsis_max_x, const char* text, const char* text_end, const cimgui::ImVec2* text_size_if_known)
 {
-    ::ImGui::RenderTextEllipsis(reinterpret_cast<::ImDrawList*>(draw_list), ConvertToCPP_ImVec2(pos_min), ConvertToCPP_ImVec2(pos_max), clip_max_x, ellipsis_max_x, text, text_end, reinterpret_cast<const ::ImVec2*>(text_size_if_known));
+    ::ImGui::RenderTextEllipsis(reinterpret_cast<::ImDrawList*>(draw_list), ConvertToCPP_ImVec2(pos_min), ConvertToCPP_ImVec2(pos_max), ellipsis_max_x, text, text_end, reinterpret_cast<const ::ImVec2*>(text_size_if_known));
 }
 
 CIMGUI_API void        cimgui::ImGui_RenderFrame(cimgui::ImVec2 p_min, cimgui::ImVec2 p_max, ImU32 fill_col)
