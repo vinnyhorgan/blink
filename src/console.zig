@@ -29,11 +29,10 @@ pub const Console = struct {
     }
 
     pub fn render(self: *Console) void {
-        if (c.ImGui_Begin("Console", null, 0)) {
-            for (self.buffer.items) |item| {
-                c.ImGui_Text(item.ptr);
-            }
-            c.ImGui_End();
+        _ = c.ImGui_Begin("Console", null, 0);
+        for (self.buffer.items) |item| {
+            c.ImGui_Text(item.ptr);
         }
+        c.ImGui_End();
     }
 };
