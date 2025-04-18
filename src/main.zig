@@ -83,7 +83,7 @@ pub fn main() !void {
     _ = c.DwmSetWindowAttribute(hwnd, 20, &dark, 4);
 
     c.glfwMakeContextCurrent(window);
-    c.glfwSwapInterval(1);
+    c.glfwSwapInterval(0);
 
     _ = c.glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
@@ -177,8 +177,45 @@ pub fn main() !void {
     // init finished show window and start main loop
     c.glfwShowWindow(window);
 
+    var current_time: f64 = undefined;
+    var previous_time: f64 = undefined;
+    var update_time: f64 = undefined;
+    var draw_time: f64 = undefined;
+    var frame_time: f64 = undefined;
+
+    const target_time: f64 = 1.0 / 60.0;
+
+    _ = c.timeBeginPeriod(1);
+    defer _ = c.timeEndPeriod(1);
+
+    previous_time = c.glfwGetTime();
+
     while (c.glfwWindowShouldClose(window) != c.GLFW_TRUE) {
+        global_console.log("frame time: {d}", .{frame_time});
+
+        current_time = c.glfwGetTime();
+        update_time = current_time - previous_time;
+        previous_time = current_time;
+
         draw(window);
+
+        current_time = c.glfwGetTime();
+        draw_time = current_time - previous_time;
+        previous_time = current_time;
+
+        frame_time = update_time + draw_time;
+
+        if (frame_time < target_time) {
+            const porcodio = (target_time - frame_time) * std.time.ns_per_s;
+
+            std.time.sleep(@intFromFloat(porcodio));
+
+            current_time = c.glfwGetTime();
+            const wait_time = current_time - previous_time;
+            previous_time = current_time;
+
+            frame_time += wait_time;
+        }
 
         c.glfwPollEvents();
     }
