@@ -191,8 +191,6 @@ pub fn main() !void {
     previous_time = c.glfwGetTime();
 
     while (c.glfwWindowShouldClose(window) != c.GLFW_TRUE) {
-        global_console.log("frame time: {d}", .{frame_time});
-
         current_time = c.glfwGetTime();
         update_time = current_time - previous_time;
         previous_time = current_time;
@@ -217,6 +215,11 @@ pub fn main() !void {
             frame_time += wait_time;
         }
 
-        c.glfwPollEvents();
+        if (c.glfwGetWindowAttrib(window, c.GLFW_ICONIFIED) == c.GLFW_TRUE) {
+            c.glfwWaitEvents();
+            previous_time = c.glfwGetTime();
+        } else {
+            c.glfwPollEvents();
+        }
     }
 }
