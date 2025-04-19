@@ -19,6 +19,7 @@ const c = @cImport({
 });
 
 var global_console: Console = undefined;
+var io: *c.ImGuiIO = undefined;
 
 fn errorCallback(errn: c_int, str: [*c]const u8) callconv(.C) void {
     std.log.err("glfw error '{}'': {s}", .{ errn, str });
@@ -40,6 +41,13 @@ fn draw(window: ?*c.GLFWwindow) void {
     c.glClear(c.GL_COLOR_BUFFER_BIT);
 
     c.cImGui_ImplOpenGL3_RenderDrawData(c.ImGui_GetDrawData());
+
+    if ((io.ConfigFlags & c.ImGuiConfigFlags_ViewportsEnable) != 0) {
+        const backup = c.glfwGetCurrentContext();
+        c.ImGui_UpdatePlatformWindows();
+        c.ImGui_RenderPlatformWindowsDefault();
+        c.glfwMakeContextCurrent(backup);
+    }
 
     c.glfwSwapBuffers(window);
 }
@@ -136,8 +144,12 @@ pub fn main() !void {
     style.*.Colors[c.ImGuiCol_NavHighlight] = color(0.60, 0.60, 0.60, 1.00);
     style.*.Colors[c.ImGuiCol_NavWindowingHighlight] = color(1.00, 1.00, 1.00, 0.70);
 
-    const io = c.ImGui_GetIO();
+    io = c.ImGui_GetIO();
     io.*.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
+    io.*.ConfigFlags |= c.ImGuiConfigFlags_ViewportsEnable;
+
+    io.*.ConfigWindowsMoveFromTitleBarOnly = true;
+    io.*.ConfigDockingAlwaysTabBar = true;
 
     var font_cfg = c.ImFontConfig{
         .FontDataOwnedByAtlas = false,
