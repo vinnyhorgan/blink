@@ -20,6 +20,8 @@ const c = @cImport({
 
 var global_console: Console = undefined;
 var io: *c.ImGuiIO = undefined;
+var vm: Vm = undefined;
+var cols: i32 = 8;
 
 fn errorCallback(errn: c_int, str: [*c]const u8) callconv(.C) void {
     std.log.err("glfw error '{}'': {s}", .{ errn, str });
@@ -55,6 +57,46 @@ fn draw(window: ?*c.GLFWwindow) void {
     c.ImGui_ShowDemoWindow(null);
 
     global_console.render();
+
+    // mem viewer
+    _ = c.ImGui_Begin("Memory", null, 0);
+
+    c.ImGui_Text("Columns:");
+    c.ImGui_SameLine();
+    _ = c.ImGui_SliderInt("##cols", &cols, 1, 16);
+
+    _ = c.ImGui_BeginChild("mem", vec2(0, 0), c.ImGuiChildFlags_Borders, c.ImGuiWindowFlags_HorizontalScrollbar);
+
+    var count: i32 = 0;
+
+    for (vm.mem, 0..) |val, i| {
+        if (count == 0) {
+            c.ImGui_Text("0x%04X", i);
+            c.ImGui_SameLine();
+        }
+
+        if (val == 0) {
+            c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, color(0.5, 0.5, 0.5, 1.0));
+        }
+
+        c.ImGui_Text("%04X", val);
+
+        if (val == 0) {
+            c.ImGui_PopStyleColor();
+        }
+
+        count += 1;
+
+        if (count < cols) {
+            c.ImGui_SameLine();
+        } else {
+            count = 0;
+        }
+    }
+
+    _ = c.ImGui_EndChild();
+
+    c.ImGui_End();
 
     c.ImGui_Render();
 
@@ -210,7 +252,7 @@ pub fn main() !void {
     global_console = Console.init(allocator);
     defer global_console.deinit();
 
-    var vm = Vm.init(&global_console);
+    vm = Vm.init(&global_console);
 
     vm.writeMem(0x3000, 0xFFFF);
 
