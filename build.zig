@@ -78,6 +78,9 @@ pub fn build(b: *std.Build) void {
             "vendor/imgui/backends/dcimgui_impl_opengl3.cpp",
             "vendor/imgui/backends/imgui_impl_glfw.cpp",
             "vendor/imgui/backends/imgui_impl_opengl3.cpp",
+
+            // stb
+            "vendor/stb/stb_image.c",
         },
     });
 
@@ -85,6 +88,7 @@ pub fn build(b: *std.Build) void {
     exe.addIncludePath(b.path("vendor/glfw/wl"));
     exe.addIncludePath(b.path("vendor/imgui"));
     exe.addIncludePath(b.path("vendor/imgui/backends"));
+    exe.addIncludePath(b.path("vendor/stb"));
 
     exe.linkSystemLibrary("gdi32");
     exe.linkSystemLibrary("opengl32");

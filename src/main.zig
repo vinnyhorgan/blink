@@ -4,6 +4,8 @@ const font = @embedFile("assets/jetbrainsmono.ttf");
 const Console = @import("console.zig").Console;
 const Vm = @import("vm.zig").Vm;
 
+const Reg = @import("vm.zig").Reg;
+
 const c = @cImport({
     @cInclude("dcimgui.h");
     @cInclude("dcimgui_impl_glfw.h");
@@ -21,7 +23,8 @@ const c = @cImport({
 var global_console: Console = undefined;
 var io: *c.ImGuiIO = undefined;
 var vm: Vm = undefined;
-var cols: i32 = 8;
+var use_16_cols: bool = false;
+var show_about = false;
 
 fn errorCallback(errn: c_int, str: [*c]const u8) callconv(.C) void {
     std.log.err("glfw error '{}'': {s}", .{ errn, str });
@@ -49,6 +52,10 @@ fn draw(window: ?*c.GLFWwindow) void {
     }
 
     if (c.ImGui_BeginMenu("Help")) {
+        if (c.ImGui_MenuItem("About")) {
+            show_about = true;
+        }
+
         c.ImGui_EndMenu();
     }
 
@@ -61,9 +68,9 @@ fn draw(window: ?*c.GLFWwindow) void {
     // mem viewer
     _ = c.ImGui_Begin("Memory", null, 0);
 
-    c.ImGui_Text("Columns:");
-    c.ImGui_SameLine();
-    _ = c.ImGui_SliderInt("##cols", &cols, 1, 16);
+    _ = c.ImGui_Checkbox("16 Columns", &use_16_cols);
+
+    c.ImGui_Separator();
 
     _ = c.ImGui_BeginChild("mem", vec2(0, 0), c.ImGuiChildFlags_Borders, c.ImGuiWindowFlags_HorizontalScrollbar);
 
@@ -75,19 +82,23 @@ fn draw(window: ?*c.GLFWwindow) void {
             c.ImGui_SameLine();
         }
 
-        if (val == 0) {
+        const is_pc = vm.reg[Reg.pc.val()] == i;
+
+        if (is_pc) {
+            c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, color(0.0, 1.0, 0.0, 1.0));
+        } else if (val == 0) {
             c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, color(0.5, 0.5, 0.5, 1.0));
         }
 
         c.ImGui_Text("%04X", val);
 
-        if (val == 0) {
+        if (is_pc or val == 0) {
             c.ImGui_PopStyleColor();
         }
 
         count += 1;
 
-        if (count < cols) {
+        if (use_16_cols and count < 16 or !use_16_cols and count < 8) {
             c.ImGui_SameLine();
         } else {
             count = 0;
@@ -97,6 +108,19 @@ fn draw(window: ?*c.GLFWwindow) void {
     _ = c.ImGui_EndChild();
 
     c.ImGui_End();
+
+    // about window
+
+    if (show_about) {
+        c.ImGui_OpenPopup("About", 0);
+    }
+
+    if (c.ImGui_BeginPopupModal("About", &show_about, c.ImGuiWindowFlags_AlwaysAutoResize)) {
+        c.ImGui_Text("Blink IDE - by Vinny Horgan\n");
+        c.ImGui_Text("Alpha build\n");
+
+        c.ImGui_EndPopup();
+    }
 
     c.ImGui_Render();
 

@@ -5,7 +5,7 @@ const Console = @import("console.zig").Console;
 const mem_size = 1 << 16;
 const pc_start = 0x3000;
 
-const Reg = enum(u8) {
+pub const Reg = enum(u8) {
     r0 = 0,
     r1,
     r2,
