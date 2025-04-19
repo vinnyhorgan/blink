@@ -1,5 +1,6 @@
 const std = @import("std");
 const font = @embedFile("assets/jetbrainsmono.ttf");
+const icon = @embedFile("assets/blink.png");
 
 const Console = @import("console.zig").Console;
 const Vm = @import("vm.zig").Vm;
@@ -16,6 +17,8 @@ const c = @cImport({
     @cDefine("GLFW_EXPOSE_NATIVE_WIN32", {});
     @cInclude("GLFW/glfw3native.h");
 
+    @cInclude("stb_image.h");
+
     // win specific
     @cInclude("dwmapi.h");
 });
@@ -25,6 +28,15 @@ var io: *c.ImGuiIO = undefined;
 var vm: Vm = undefined;
 var use_16_cols: bool = false;
 var show_about = false;
+var icon_tex: c.GLuint = 0;
+
+// palette (6 colors)
+var white: c.ImVec4 = undefined;
+var yellow: c.ImVec4 = undefined;
+var light_pink: c.ImVec4 = undefined;
+var dark_pink: c.ImVec4 = undefined;
+var light_purple: c.ImVec4 = undefined;
+var dark_purple: c.ImVec4 = undefined;
 
 fn errorCallback(errn: c_int, str: [*c]const u8) callconv(.C) void {
     std.log.err("glfw error '{}'': {s}", .{ errn, str });
@@ -116,8 +128,41 @@ fn draw(window: ?*c.GLFWwindow) void {
     }
 
     if (c.ImGui_BeginPopupModal("About", &show_about, c.ImGuiWindowFlags_AlwaysAutoResize)) {
-        c.ImGui_Text("Blink IDE - by Vinny Horgan\n");
-        c.ImGui_Text("Alpha build\n");
+        const window_size = c.ImGui_GetWindowSize().x;
+        const image_x = (window_size - 128) / 2.0;
+        c.ImGui_SetCursorPosX(image_x);
+        c.ImGui_Image(icon_tex, vec2(128, 128));
+
+        c.ImGui_Spacing();
+
+        const text = "Blink IDE alpha build";
+        c.ImGui_SetCursorPosX((window_size - c.ImGui_CalcTextSize(text).x) / 2.0);
+        c.ImGui_Text(text);
+
+        const text2 = "Made by Vinny Horgan with <3";
+        c.ImGui_SetCursorPosX((window_size - c.ImGui_CalcTextSize(text2).x) / 2.0);
+        c.ImGui_Text(text2);
+
+        c.ImGui_Spacing();
+
+        const link = "https://github.com/vinnyhorgan/blink";
+        c.ImGui_SetCursorPosX((window_size - c.ImGui_CalcTextSize(link).x) / 2.0);
+
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, light_pink);
+
+        if (c.ImGui_Selectable(link)) {}
+
+        c.ImGui_PopStyleColor();
+
+        c.ImGui_Spacing();
+        c.ImGui_Separator();
+        c.ImGui_Spacing();
+
+        const button_size = c.ImGui_GetContentRegionAvail().x / 2.0;
+        c.ImGui_SetCursorPosX((window_size - button_size) / 2.0);
+        if (c.ImGui_ButtonEx("Close", vec2(button_size, 0))) {
+            show_about = false;
+        }
 
         c.ImGui_EndPopup();
     }
@@ -214,12 +259,12 @@ pub fn main() !void {
     style.*.GrabRounding = 2.0;
 
     // palette (6 colors)
-    const white = try colorFromHex("#fbf5ef", 1.0);
-    const yellow = try colorFromHex("#f2d3ab", 1.0);
-    const light_pink = try colorFromHex("#c69fa5", 1.0);
-    const dark_pink = try colorFromHex("#8b6d9c", 1.0);
-    const light_purple = try colorFromHex("#494d7e", 1.0);
-    const dark_purple = try colorFromHex("#272744", 1.0);
+    white = try colorFromHex("#fbf5ef", 1.0);
+    yellow = try colorFromHex("#f2d3ab", 1.0);
+    light_pink = try colorFromHex("#c69fa5", 1.0);
+    dark_pink = try colorFromHex("#8b6d9c", 1.0);
+    light_purple = try colorFromHex("#494d7e", 1.0);
+    dark_purple = try colorFromHex("#272744", 1.0);
 
     _ = yellow;
     _ = light_pink;
@@ -281,6 +326,25 @@ pub fn main() !void {
     vm.writeMem(0x3000, 0xFFFF);
 
     _ = vm.runCycle();
+
+    // load icon
+
+    var width: c_int = 0;
+    var height: c_int = 0;
+    const image_data = c.stbi_load_from_memory(icon, icon.len, &width, &height, null, 4);
+    if (image_data == null) {
+        return;
+    }
+
+    defer c.stbi_image_free(image_data);
+
+    c.glGenTextures(1, &icon_tex);
+    c.glBindTexture(c.GL_TEXTURE_2D, icon_tex);
+
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_LINEAR);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
+
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, width, height, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, image_data);
 
     // init finished show window and start main loop
     c.glfwShowWindow(window);
