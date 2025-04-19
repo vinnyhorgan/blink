@@ -6,6 +6,7 @@ const Console = @import("console.zig").Console;
 const Vm = @import("vm.zig").Vm;
 
 const Reg = @import("vm.zig").Reg;
+const Flag = @import("vm.zig").Flag;
 
 const c = @cImport({
     @cInclude("dcimgui.h");
@@ -73,16 +74,65 @@ fn draw(window: ?*c.GLFWwindow) void {
 
     c.ImGui_EndMainMenuBar();
 
-    c.ImGui_ShowDemoWindow(null);
+    // c.ImGui_ShowDemoWindow(null);
 
     global_console.render();
+
+    // registers
+    _ = c.ImGui_Begin("VM", null, 0);
+    c.ImGui_Text("Registers");
+    c.ImGui_Spacing();
+    c.ImGui_Separator();
+    c.ImGui_Spacing();
+    c.ImGui_Text("R0: 0x%04X", vm.reg[Reg.r0.val()]);
+    c.ImGui_SameLine();
+    c.ImGui_Text("R1: 0x%04X", vm.reg[Reg.r1.val()]);
+    c.ImGui_Text("R2: 0x%04X", vm.reg[Reg.r2.val()]);
+    c.ImGui_SameLine();
+    c.ImGui_Text("R3: 0x%04X", vm.reg[Reg.r3.val()]);
+    c.ImGui_Text("R4: 0x%04X", vm.reg[Reg.r4.val()]);
+    c.ImGui_SameLine();
+    c.ImGui_Text("R5: 0x%04X", vm.reg[Reg.r5.val()]);
+    c.ImGui_Text("R6: 0x%04X", vm.reg[Reg.r6.val()]);
+    c.ImGui_SameLine();
+    c.ImGui_Text("R7: 0x%04X", vm.reg[Reg.r7.val()]);
+
+    c.ImGui_Spacing();
+    c.ImGui_Separator();
+    c.ImGui_Spacing();
+
+    c.ImGui_Text("PC: 0x%04X", vm.reg[Reg.pc.val()]);
+    c.ImGui_SameLine();
+
+    if (vm.reg[Reg.cond.val()] & Flag.pos.val() != 0) {
+        c.ImGui_Text("COND: positive");
+    } else if (vm.reg[Reg.cond.val()] & Flag.zero.val() != 0) {
+        c.ImGui_Text("COND: zero");
+    } else if (vm.reg[Reg.cond.val()] & Flag.neg.val() != 0) {
+        c.ImGui_Text("COND: negative");
+    } else {
+        c.ImGui_Text("COND: ???");
+    }
+
+    c.ImGui_Spacing();
+    c.ImGui_Separator();
+    c.ImGui_Spacing();
+
+    const size = c.ImGui_GetContentRegionAvail().x;
+    if (c.ImGui_ButtonEx("Step", vec2(size, 0))) {
+        _ = vm.runCycle();
+    }
+
+    c.ImGui_End();
 
     // mem viewer
     _ = c.ImGui_Begin("Memory", null, 0);
 
     _ = c.ImGui_Checkbox("16 Columns", &use_16_cols);
 
+    c.ImGui_Spacing();
     c.ImGui_Separator();
+    c.ImGui_Spacing();
 
     _ = c.ImGui_BeginChild("mem", vec2(0, 0), c.ImGuiChildFlags_Borders, c.ImGuiWindowFlags_HorizontalScrollbar);
 

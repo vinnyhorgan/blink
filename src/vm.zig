@@ -22,7 +22,7 @@ pub const Reg = enum(u8) {
     }
 };
 
-const Flag = enum(u8) {
+pub const Flag = enum(u8) {
     pos = 1 << 0,
     zero = 1 << 1,
     neg = 1 << 2,
