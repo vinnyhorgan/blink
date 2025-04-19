@@ -86,6 +86,14 @@ fn color(r: f32, g: f32, b: f32, a: f32) c.ImVec4 {
     return v;
 }
 
+fn colorFromHex(hex: []const u8, a: f32) !c.ImVec4 {
+    const r = try std.fmt.parseInt(u8, hex[1..3], 16);
+    const g = try std.fmt.parseInt(u8, hex[3..5], 16);
+    const b = try std.fmt.parseInt(u8, hex[5..7], 16);
+
+    return color(@as(f32, @floatFromInt(r)) / 255.0, @as(f32, @floatFromInt(g)) / 255.0, @as(f32, @floatFromInt(b)) / 255.0, a);
+}
+
 fn vec2(x: f32, y: f32) c.ImVec2 {
     var v = c.ImVec2{};
     v.x = x;
@@ -106,7 +114,7 @@ pub fn main() !void {
 
     c.glfwWindowHint(c.GLFW_VISIBLE, c.GLFW_FALSE);
 
-    const window = c.glfwCreateWindow(1280, 720, "blink", null, null);
+    const window = c.glfwCreateWindow(1280, 720, "Blink IDE - by Vinny Horgan - Alpha build", null, null);
     if (window == null) {
         return;
     }
@@ -139,7 +147,32 @@ pub fn main() !void {
     style.*.ScrollbarRounding = 4.0;
     style.*.GrabRounding = 2.0;
 
+    // palette (6 colors)
+    const white = try colorFromHex("#fbf5ef", 1.0);
+    const yellow = try colorFromHex("#f2d3ab", 1.0);
+    const light_pink = try colorFromHex("#c69fa5", 1.0);
+    const dark_pink = try colorFromHex("#8b6d9c", 1.0);
+    const light_purple = try colorFromHex("#494d7e", 1.0);
+    const dark_purple = try colorFromHex("#272744", 1.0);
+
+    _ = yellow;
+    _ = light_pink;
+
     style.*.Colors[c.ImGuiCol_ResizeGrip] = color(0.00, 0.00, 0.00, 0.00);
+
+    style.*.Colors[c.ImGuiCol_Text] = white;
+    style.*.Colors[c.ImGuiCol_WindowBg] = dark_purple;
+    style.*.Colors[c.ImGuiCol_TitleBg] = light_purple;
+    style.*.Colors[c.ImGuiCol_TabDimmedSelected] = try colorFromHex("#272744", 0.5);
+    style.*.Colors[c.ImGuiCol_TabHovered] = dark_purple;
+    style.*.Colors[c.ImGuiCol_MenuBarBg] = dark_purple;
+    style.*.Colors[c.ImGuiCol_DockingEmptyBg] = dark_pink;
+    style.*.Colors[c.ImGuiCol_DockingPreview] = dark_purple;
+    style.*.Colors[c.ImGuiCol_TitleBgActive] = light_purple;
+    style.*.Colors[c.ImGuiCol_TabSelected] = dark_purple;
+    style.*.Colors[c.ImGuiCol_TabSelectedOverline] = dark_pink;
+    style.*.Colors[c.ImGuiCol_Header] = try colorFromHex("#494d7e", 0.5);
+    style.*.Colors[c.ImGuiCol_HeaderHovered] = light_purple;
 
     io = c.ImGui_GetIO();
     io.*.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
