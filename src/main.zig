@@ -74,7 +74,7 @@ fn draw(window: ?*c.GLFWwindow) void {
 
     c.ImGui_EndMainMenuBar();
 
-    // c.ImGui_ShowDemoWindow(null);
+    c.ImGui_ShowDemoWindow(null);
 
     global_console.render();
 
@@ -130,42 +130,73 @@ fn draw(window: ?*c.GLFWwindow) void {
 
     _ = c.ImGui_Checkbox("16 Columns", &use_16_cols);
 
+    c.ImGui_SameLine();
+
+    var should_jump = false;
+    if (c.ImGui_Button("Jump to PC")) {
+        should_jump = true;
+    }
+
     c.ImGui_Spacing();
     c.ImGui_Separator();
     c.ImGui_Spacing();
 
     _ = c.ImGui_BeginChild("mem", vec2(0, 0), c.ImGuiChildFlags_Borders, c.ImGuiWindowFlags_HorizontalScrollbar);
 
-    var count: i32 = 0;
+    const cols: u32 = if (use_16_cols) 16 else 8;
 
-    for (vm.mem, 0..) |val, i| {
-        if (count == 0) {
-            c.ImGui_Text("0x%04X", i);
+    const pc_index = vm.reg[Reg.pc.val()];
+    const pc_row = pc_index / cols;
+
+    if (should_jump) {
+        const line_height = c.ImGui_GetTextLineHeightWithSpacing();
+        c.ImGui_SetScrollY(@as(f32, @floatFromInt(pc_row)) * line_height);
+    }
+
+    const rows = (vm.mem.len + cols - 1) / cols;
+    var clipper = c.ImGuiListClipper{};
+    c.ImGuiListClipper_Begin(&clipper, @as(c_int, @intCast(rows)), -1.0);
+
+    while (c.ImGuiListClipper_Step(&clipper)) {
+        for (@as(usize, @intCast(clipper.DisplayStart))..@as(usize, @intCast(clipper.DisplayEnd))) |row| {
+            const base = row * cols;
+
+            if (base >= vm.mem.len) {
+                break;
+            }
+
+            c.ImGui_Text("0x%04X: ", base);
             c.ImGui_SameLine();
-        }
 
-        const is_pc = vm.reg[Reg.pc.val()] == i;
+            for (0..cols) |col| {
+                const i = base + col;
+                if (i >= vm.mem.len) {
+                    break;
+                }
 
-        if (is_pc) {
-            c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, color(0.0, 1.0, 0.0, 1.0));
-        } else if (val == 0) {
-            c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, color(0.5, 0.5, 0.5, 1.0));
-        }
+                const val = vm.mem[i];
+                const is_pc = i == vm.reg[Reg.pc.val()];
 
-        c.ImGui_Text("%04X", val);
+                if (is_pc) {
+                    c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, color(0.0, 1.0, 0.0, 1.0));
+                } else if (val == 0) {
+                    c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, color(0.5, 0.5, 0.5, 1.0));
+                }
 
-        if (is_pc or val == 0) {
-            c.ImGui_PopStyleColor();
-        }
+                c.ImGui_Text("%04X", val);
 
-        count += 1;
+                if (is_pc or val == 0) {
+                    c.ImGui_PopStyleColor();
+                }
 
-        if (use_16_cols and count < 16 or !use_16_cols and count < 8) {
-            c.ImGui_SameLine();
-        } else {
-            count = 0;
+                if (col < cols - 1) {
+                    c.ImGui_SameLine();
+                }
+            }
         }
     }
+
+    c.ImGuiListClipper_End(&clipper);
 
     _ = c.ImGui_EndChild();
 
@@ -200,7 +231,9 @@ fn draw(window: ?*c.GLFWwindow) void {
 
         c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, light_pink);
 
-        if (c.ImGui_Selectable(link)) {}
+        if (c.ImGui_Selectable(link)) {
+            _ = c.system("explorer \"https://github.com/vinnyhorgan/blink\"");
+        }
 
         c.ImGui_PopStyleColor();
 
