@@ -92,8 +92,10 @@ pub const Vm = struct {
         return self;
     }
 
-    pub fn runCycle(self: *Vm) bool {
-        self.console.log("Start cycle...\n", .{});
+    pub fn runCycle(self: *Vm, log: bool) bool {
+        if (log) {
+            self.console.log("Start cycle...\n", .{});
+        }
 
         const instruction = self.readMem(self.reg[Reg.pc.val()]);
 
@@ -101,13 +103,17 @@ pub const Vm = struct {
 
         const op: Op = @enumFromInt(instruction >> 12);
 
-        self.console.log("Executing opcode: {s}\n", .{@tagName(op)});
+        if (log) {
+            self.console.log("Executing opcode: {s}\n", .{@tagName(op)});
+        }
 
         switch (op) {
             Op.BR => self.opBR(instruction),
             Op.ADD => self.opADD(instruction),
             else => {
-                self.console.log("unknown opcode: {s}, stopping...\n", .{@tagName(op)});
+                if (log) {
+                    self.console.log("unknown opcode: {s}, stopping...\n", .{@tagName(op)});
+                }
                 return false;
             },
         }

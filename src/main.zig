@@ -31,6 +31,9 @@ var use_16_cols: bool = false;
 var show_about = false;
 var icon_tex: c.GLuint = 0;
 
+var running = false;
+var cycles_per_frame: c_int = 1;
+
 // palette (6 colors)
 var white: c.ImVec4 = undefined;
 var yellow: c.ImVec4 = undefined;
@@ -120,8 +123,28 @@ fn draw(window: ?*c.GLFWwindow) void {
 
     const size = c.ImGui_GetContentRegionAvail().x;
     if (c.ImGui_ButtonEx("Step", vec2(size, 0))) {
-        _ = vm.runCycle();
+        _ = vm.runCycle(true);
     }
+
+    if (running) {
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Button, color(1.0, 0.0, 0.0, 0.5));
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_ButtonHovered, color(1.0, 0.0, 0.0, 1.0));
+        if (c.ImGui_ButtonEx("Stop", vec2(size, 0))) {
+            running = false;
+        }
+        c.ImGui_PopStyleColor();
+        c.ImGui_PopStyleColor();
+    } else {
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Button, color(0.0, 1.0, 0.0, 0.5));
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_ButtonHovered, color(0.0, 1.0, 0.0, 1.0));
+        if (c.ImGui_ButtonEx("Run", vec2(size, 0))) {
+            running = true;
+        }
+        c.ImGui_PopStyleColor();
+        c.ImGui_PopStyleColor();
+    }
+
+    _ = c.ImGui_SliderInt("Speed (CPF)", &cycles_per_frame, 1, 50);
 
     c.ImGui_End();
 
@@ -367,6 +390,9 @@ pub fn main() !void {
     style.*.Colors[c.ImGuiCol_TabSelectedOverline] = dark_pink;
     style.*.Colors[c.ImGuiCol_Header] = try colorFromHex("#494d7e", 0.5);
     style.*.Colors[c.ImGuiCol_HeaderHovered] = light_purple;
+    style.*.Colors[c.ImGuiCol_Button] = try colorFromHex("#494d7e", 0.5);
+    style.*.Colors[c.ImGuiCol_ButtonHovered] = light_purple;
+    style.*.Colors[c.ImGuiCol_ButtonActive] = dark_pink;
 
     io = c.ImGui_GetIO();
     io.*.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
@@ -406,10 +432,6 @@ pub fn main() !void {
 
     vm = Vm.init(&global_console);
 
-    vm.writeMem(0x3000, 0xFFFF);
-
-    _ = vm.runCycle();
-
     // load icon
 
     var width: c_int = 0;
@@ -446,6 +468,12 @@ pub fn main() !void {
     previous_time = c.glfwGetTime();
 
     while (c.glfwWindowShouldClose(window) != c.GLFW_TRUE) {
+        if (running) {
+            for (0..@as(usize, @intCast(cycles_per_frame))) |_| {
+                _ = vm.runCycle(false);
+            }
+        }
+
         current_time = c.glfwGetTime();
         update_time = current_time - previous_time;
         previous_time = current_time;
