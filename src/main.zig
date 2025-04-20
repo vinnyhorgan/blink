@@ -448,6 +448,8 @@ pub fn main() !void {
 
     vm = Vm.init(&global_console);
 
+    try vm.loadRom("test.obj");
+
     global_jump_to_pc = true;
 
     // load icon
@@ -488,7 +490,10 @@ pub fn main() !void {
     while (c.glfwWindowShouldClose(window) != c.GLFW_TRUE) {
         if (running) {
             for (0..@as(usize, @intCast(cycles_per_frame))) |_| {
-                _ = vm.runCycle(false);
+                if (!vm.runCycle(false)) {
+                    running = false;
+                    break;
+                }
             }
         }
 

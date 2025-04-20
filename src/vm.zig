@@ -92,6 +92,30 @@ pub const Vm = struct {
         return self;
     }
 
+    pub fn loadRom(self: *Vm, path: []const u8) !void {
+        const file = try std.fs.cwd().openFile(path, .{});
+        defer file.close();
+
+        const reader = file.reader();
+
+        var origin = try reader.readInt(u16, std.builtin.Endian.little);
+        origin = @byteSwap(origin);
+
+        const max_read = @as(u32, @intCast(mem_size)) - @as(u32, @intCast(origin));
+
+        var mem_idx = origin;
+        while (mem_idx < max_read) {
+            const word = reader.readInt(u16, std.builtin.Endian.little) catch |err| {
+                switch (err) {
+                    error.EndOfStream => break,
+                    else => return err,
+                }
+            };
+            self.mem[mem_idx] = @byteSwap(word);
+            mem_idx += 1;
+        }
+    }
+
     pub fn runCycle(self: *Vm, log: bool) bool {
         if (log) {
             self.console.log("Start cycle...\n", .{});
