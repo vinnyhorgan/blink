@@ -77,7 +77,7 @@ fn draw(window: ?*c.GLFWwindow) void {
 
     c.ImGui_EndMainMenuBar();
 
-    c.ImGui_ShowDemoWindow(null);
+    //c.ImGui_ShowDemoWindow(null);
 
     global_console.render();
 
