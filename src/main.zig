@@ -30,6 +30,7 @@ var vm: Vm = undefined;
 var use_16_cols: bool = false;
 var show_about = false;
 var icon_tex: c.GLuint = 0;
+var global_jump_to_pc: bool = false;
 
 var running = false;
 var cycles_per_frame: c_int = 1;
@@ -127,19 +128,23 @@ fn draw(window: ?*c.GLFWwindow) void {
     }
 
     if (running) {
-        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Button, color(1.0, 0.0, 0.0, 0.5));
-        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_ButtonHovered, color(1.0, 0.0, 0.0, 1.0));
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Button, color(0.93, 0.26, 0.4, 0.5));
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_ButtonHovered, color(0.93, 0.26, 0.4, 1.0));
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, color(0.0, 0.0, 0.0, 1.0));
         if (c.ImGui_ButtonEx("Stop", vec2(size, 0))) {
             running = false;
         }
         c.ImGui_PopStyleColor();
         c.ImGui_PopStyleColor();
+        c.ImGui_PopStyleColor();
     } else {
-        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Button, color(0.0, 1.0, 0.0, 0.5));
-        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_ButtonHovered, color(0.0, 1.0, 0.0, 1.0));
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Button, color(0.95, 0.83, 0.67, 0.5));
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_ButtonHovered, yellow);
+        c.ImGui_PushStyleColorImVec4(c.ImGuiCol_Text, color(0.0, 0.0, 0.0, 1.0));
         if (c.ImGui_ButtonEx("Run", vec2(size, 0))) {
             running = true;
         }
+        c.ImGui_PopStyleColor();
         c.ImGui_PopStyleColor();
         c.ImGui_PopStyleColor();
     }
@@ -171,9 +176,11 @@ fn draw(window: ?*c.GLFWwindow) void {
     const pc_index = vm.reg[Reg.pc.val()];
     const pc_row = pc_index / cols;
 
-    if (should_jump) {
+    if (should_jump or global_jump_to_pc) {
         const line_height = c.ImGui_GetTextLineHeightWithSpacing();
         c.ImGui_SetScrollY(@as(f32, @floatFromInt(pc_row)) * line_height);
+
+        global_jump_to_pc = false;
     }
 
     const rows = (vm.mem.len + cols - 1) / cols;
@@ -372,7 +379,6 @@ pub fn main() !void {
     light_purple = try colorFromHex("#494d7e", 1.0);
     dark_purple = try colorFromHex("#272744", 1.0);
 
-    _ = yellow;
     _ = light_pink;
 
     style.*.Colors[c.ImGuiCol_ResizeGrip] = color(0.00, 0.00, 0.00, 0.00);
@@ -393,6 +399,16 @@ pub fn main() !void {
     style.*.Colors[c.ImGuiCol_Button] = try colorFromHex("#494d7e", 0.5);
     style.*.Colors[c.ImGuiCol_ButtonHovered] = light_purple;
     style.*.Colors[c.ImGuiCol_ButtonActive] = dark_pink;
+    style.*.Colors[c.ImGuiCol_SliderGrab] = light_purple;
+    style.*.Colors[c.ImGuiCol_SliderGrabActive] = dark_pink;
+    style.*.Colors[c.ImGuiCol_FrameBg] = try colorFromHex("#494d7e", 0.5);
+    style.*.Colors[c.ImGuiCol_FrameBgHovered] = try colorFromHex("#494d7e", 0.5);
+    style.*.Colors[c.ImGuiCol_FrameBgActive] = try colorFromHex("#494d7e", 0.5);
+    style.*.Colors[c.ImGuiCol_CheckMark] = white;
+    style.*.Colors[c.ImGuiCol_SeparatorHovered] = yellow;
+    style.*.Colors[c.ImGuiCol_SeparatorActive] = yellow;
+    style.*.Colors[c.ImGuiCol_ResizeGripHovered] = yellow;
+    style.*.Colors[c.ImGuiCol_ResizeGripActive] = yellow;
 
     io = c.ImGui_GetIO();
     io.*.ConfigFlags |= c.ImGuiConfigFlags_DockingEnable;
@@ -431,6 +447,8 @@ pub fn main() !void {
     defer global_console.deinit();
 
     vm = Vm.init(&global_console);
+
+    global_jump_to_pc = true;
 
     // load icon
 
