@@ -76,6 +76,7 @@ pub const Vm = struct {
     mem: [mem_size]u16,
     reg: [Reg.cond.val() + 1]u16,
     console: *Console,
+    exit: bool,
 
     pub fn init(console: *Console) Vm {
         console.log("Initializing VM...\n", .{});
@@ -84,6 +85,7 @@ pub const Vm = struct {
             .mem = [_]u16{0} ** mem_size,
             .reg = [_]u16{0} ** (Reg.cond.val() + 1),
             .console = console,
+            .exit = false,
         };
 
         self.reg[Reg.pc.val()] = pc_start;
@@ -132,6 +134,9 @@ pub const Vm = struct {
         }
 
         switch (op) {
+            Op.LEA => self.opLEA(instruction),
+            Op.TRAP => self.opTRAP(instruction),
+
             Op.BR => self.opBR(instruction),
             Op.ADD => self.opADD(instruction),
             else => {
@@ -140,6 +145,11 @@ pub const Vm = struct {
                 }
                 return false;
             },
+        }
+
+        if (self.exit) {
+            self.exit = false;
+            return false;
         }
 
         return true;
@@ -164,6 +174,47 @@ pub const Vm = struct {
     }
 
     // instructions
+
+    fn opLEA(self: *Vm, instruction: u16) void {
+        const dr = (instruction >> 9) & 0x7;
+        const pc_offset = signExtend(instruction & 0x1FF, 9);
+        const addr, _ = @addWithOverflow(self.reg[Reg.pc.val()], pc_offset);
+        self.reg[dr] = addr;
+        self.updateFlags(@enumFromInt(dr));
+    }
+
+    fn opTRAP(self: *Vm, instruction: u16) void {
+        self.reg[Reg.r7.val()] = self.reg[Reg.pc.val()];
+
+        const trap_code: Trap = @enumFromInt(instruction & 0xFF);
+        switch (trap_code) {
+            Trap.puts => {
+                var addr = self.reg[Reg.r0.val()];
+                var c: u8 = @truncate(self.readMem(addr));
+
+                var buf: [256]u8 = undefined;
+                var i: usize = 0;
+
+                while (c != 0) {
+                    buf[i] = c;
+                    i += 1;
+                    addr += 1;
+                    c = @truncate(self.readMem(addr));
+                }
+                buf[i] = 0;
+
+                self.console.log("{s}", .{buf});
+            },
+            Trap.halt => {
+                self.console.log("Halting...\n", .{});
+                self.exit = true;
+            },
+            Trap.getc => {},
+            Trap.out => {},
+            Trap.in => {},
+            Trap.putsp => {},
+        }
+    }
 
     fn opBR(self: *Vm, instruction: u16) void {
         _ = self;
